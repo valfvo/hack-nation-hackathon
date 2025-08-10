@@ -47,6 +47,7 @@ class ParsedDetails(BaseModel):
     )
 
 
+# Added a field to store the email content
 class GraphState(BaseModel):
     """The state that flows through our modular graph."""
 
@@ -55,8 +56,9 @@ class GraphState(BaseModel):
     parsed_details: Optional[ParsedDetails] = None
     concise_summary: Optional[str] = None
     error: Optional[str] = None
-    # Parameter that can be changed by the user to make the tool succeed/fail
     required_skill: Optional[str] = None
+    # Field to store the outcome of the rejection task
+    rejection_email_content: Optional[str] = None
 
 
 # ==============================================================================
@@ -109,17 +111,13 @@ def parse_resume_details_with_validation(state: GraphState) -> GraphState:
         response = structured_llm.invoke(prompt)
         state.parsed_details = response
 
-        # --- VALIDATION LOGIC ---
         if state.required_skill:
             log_event(
                 "VALIDATION",
                 {"message": f"Checking for required skill: '{state.required_skill}'"},
             )
-            parsed_skills_lower = [
-                skill.lower() for skill in state.parsed_details.skills
-            ]
+            parsed_skills_lower = [skill.lower() for skill in response.skills or []]
             if state.required_skill.lower() not in parsed_skills_lower:
-                # Generating the controlled error
                 error_message = f"Validation Failed: The required skill '{state.required_skill}' was not found in the resume."
                 state.error = error_message
                 log_event(
@@ -129,7 +127,6 @@ def parse_resume_details_with_validation(state: GraphState) -> GraphState:
                         "reason": error_message,
                     },
                 )
-                return state
     except Exception as e:
         state.error = f"Technical Error during details parsing: {e}"
     return state
@@ -152,40 +149,93 @@ def create_concise_summary(state: GraphState) -> GraphState:
     return state
 
 
+def send_rejection_email(state: GraphState) -> GraphState:
+    """Tool: Composes and 'sends' a rejection email if validation failed."""
+    if not state.error or not state.parsed_details:
+        return state
+
+    candidate_name = state.parsed_details.full_name or "Candidate"
+    candidate_email = state.parsed_details.email
+    required_skill = state.required_skill or "a specific skill"
+
+    log_event(
+        "TOOL_EXECUTE", {"name": "send_rejection_email", "recipient": candidate_email}
+    )
+
+    email_subject = "Update on your application with AgentOps Inc."
+    email_body = f"""Dear {candidate_name},
+
+Thank you for your interest in a position at AgentOps Inc. and for taking the time to submit your application.
+
+We received a high volume of qualified applicants. After careful review, we found that while your background is impressive, it does not fully align with the specific requirements for this role, particularly regarding experience with '{required_skill}'.
+
+We will keep your resume on file for any future openings that may be a better match for your skills and experience.
+
+We wish you the best of luck in your job search.
+
+Sincerely,
+The AgentOps Inc."""
+
+    print("\n--- 📧 SIMULATING EMAIL SEND ---")
+    print(f"To: {candidate_email}\nSubject: {email_subject}\n---\n{email_body}\n---")
+
+    state.rejection_email_content = email_body
+    return state
+
+
 # ==============================================================================
 # SECTION 4: BUILDING THE GRAPH WITH CONDITIONAL LOGIC
 # ==============================================================================
 
 
-# Decision node
+# The decision logic is now more specific
 def decide_after_parsing(state: GraphState) -> str:
-    """Decides the next step after parsing based on the presence of an error."""
+    """Decides the next step after parsing based on the outcome."""
     if state.error:
-        log_event("ROUTING", {"decision": "Error detected. Ending process."})
-        return "end_process"
+        # Check if it's a validation error and if we have enough info to send an email
+        if "Validation Failed" in state.error and state.parsed_details.email:
+            log_event(
+                "ROUTING",
+                {"decision": "Validation failed. Routing to rejection email task."},
+            )
+            return "send_rejection"
+        else:
+            log_event(
+                "ROUTING",
+                {
+                    "decision": f"A technical error occurred: {state.error}. Ending process."
+                },
+            )
+            return "technical_error"
     else:
         log_event("ROUTING", {"decision": "No error. Proceeding to summary."})
         return "continue_to_summary"
 
 
-def build_graph_with_replay_logic():
+def build_graph_with_failure_task():
     workflow = StateGraph(GraphState)
     workflow.add_node("extract_text", extract_text_from_pdf)
     workflow.add_node("parse_and_validate", parse_resume_details_with_validation)
     workflow.add_node("create_summary", create_concise_summary)
+    # Added the email node
+    workflow.add_node("send_rejection_email", send_rejection_email)
+
     workflow.add_edge(START, "extract_text")
     workflow.add_edge("extract_text", "parse_and_validate")
 
+    # The routing table now includes the new path
     workflow.add_conditional_edges(
-        "parse_and_validate",  # The node from which the decision is made
-        decide_after_parsing,  # The function that makes the decision
+        "parse_and_validate",
+        decide_after_parsing,
         {
-            # "decision_name": "next_node_name"
             "continue_to_summary": "create_summary",
-            "end_process": END,
+            "send_rejection": "send_rejection_email",
+            "technical_error": END,
         },
     )
     workflow.add_edge("create_summary", END)
+    # The rejection path also leads to the end
+    workflow.add_edge("send_rejection_email", END)
 
     return workflow.compile()
 
@@ -196,62 +246,54 @@ def build_graph_with_replay_logic():
 
 
 def main():
-    pdf_file = "android-developer-1559034496.pdf"  # Make sure this file is in resume/
+    pdf_file = "android-developer-1559034496.pdf"
     pdf_path = os.path.join("resume/", pdf_file)
-
-    app = build_graph_with_replay_logic()
+    app = build_graph_with_failure_task()
 
     # --- STEP 1: Initial run that is designed to FAIL ---
     print("--- 🚀 Initial Run: Testing validation failure ---")
     initial_state_to_fail = {"pdf_path": pdf_path, "required_skill": "Machine Learning"}
     log_event("TASK_START", {"cv": pdf_file, "params": initial_state_to_fail})
-
     failed_state = app.invoke(initial_state_to_fail)
 
+    # Check the outcome of the failure
     if failed_state.get("error"):
-        print(f"\n❌ RUN FAILED! The UI would display this error for replay:")
-        print(f"   Error: {failed_state['error']}")
+        print(f"\n❌ RUN FAILED (as expected)! A follow-up task was triggered.")
+        print(f"   Reason: {failed_state['error']}")
+        if failed_state.get("rejection_email_content"):
+            print("   Outcome: A rejection email was composed and 'sent'.")
     else:
-        print(
-            "✅ The run succeeded unexpectedly. Try with a different 'required_skill'."
-        )
+        print("✅ The run succeeded unexpectedly.")
         return
 
-    # --- STEP 2: REPLAY - The user changes the parameter ---
-    print("\n--- 🔄 Replay Scenario: The user corrects the parameter ---")
-    print("   The user sees the error and decides to no longer require the skill.")
+    # --- STEP 2: REPLAY - The user decides to approve the candidate instead ---
+    print("\n--- 🔄 Replay Scenario: The user overrides the failure ---")
+    print(
+        "   The user sees the validation failure but decides to proceed anyway by removing the requirement."
+    )
 
-    # Prepare for replay. We start from the failed state
     state_for_replay = failed_state.copy()
-
-    # The user changes the parameter via the UI
-    state_for_replay["required_skill"] = None  # We remove the requirement
-
-    # And we must reset the error so the graph re-evaluates the node.
+    state_for_replay["required_skill"] = None
     state_for_replay["error"] = None
     log_event("REPLAY_START", {"cv": pdf_file, "new_params": {"required_skill": None}})
-
-    # We re-invoke the graph with the corrected state.
     successful_state = app.invoke(state_for_replay)
 
     if successful_state.get("error"):
         print(f"\n❌ REPLAY FAILED! Error: {successful_state['error']}")
     else:
         print("\n✅ REPLAY SUCCEEDED!")
-        print("   The tool worked and the graph continued to the end.")
-
-        # Assemble the final result
+        print("   The graph bypassed the failure and continued to the end.")
         final_result = successful_state["parsed_details"].dict()
-        final_result["concise_summary"] = successful_state["concise_summary"]
+        final_result["concise_summary"] = successful_state.get(
+            "concise_summary", "Summary could not be generated."
+        )
 
         print("\n--- Final Result ---")
         print(json.dumps(final_result, indent=2))
 
-        # --- Save the successful result to a JSON file ---
         output_filename = "result.json"
         with open(output_filename, "w", encoding="utf-8") as f:
             json.dump(final_result, f, ensure_ascii=False, indent=4)
-
         print(f"\n✅ Final result saved to '{output_filename}'")
 
 
