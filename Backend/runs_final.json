@@ -1,0 +1,513 @@
+{
+  "run-1": {
+    "id": "run-1",
+    "created_at": "2025-08-10T09:52:00Z",
+    "tasks": [
+    {
+      "id": "run-1-task-1",
+      "name": "Task 1",
+      "created_at": "2025-08-10T09:52:00Z",
+      "metadata": {},
+      "steps": [
+        {
+          "id": "1f075d38-3940-6315-8000-81041e2e3928",
+          "type": "prompt",
+          "name": "prompt",
+          "created_at": "2025-08-10T10:19:35.455003+00:00",
+          "duration": 0,
+          "content": "\n    Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill is 'Java'. \n    If the candidate has this skill, provide a summary of their profile.\n    ",
+          "input": null,
+          "output": null,
+          "tool_calls": [],
+          "metrics": {},
+          "raw": {
+            "step": {
+              "content": "\n    Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill is 'Java'. \n    If the candidate has this skill, provide a summary of their profile.\n    ",
+              "tool_calls": [],
+              "message_type": "human"
+            }
+          },
+          "tags": { "replay": 0 }
+        },
+        {
+          "id": "1f075d38-4367-63d4-8001-d10683ecaa5f",
+          "type": "thinking",
+          "name": "thinking",
+          "created_at": "2025-08-10T10:19:36.519573+00:00",
+          "duration": 1.06457,
+          "content": "",
+          "input": null,
+          "output": null,
+          "tool_calls": [],
+          "metrics": {
+            "token_usage": {
+              "completion_tokens": 26,
+              "prompt_tokens": 217,
+              "total_tokens": 243
+            },
+            "model_name": "gpt-4o-mini-2024-07-18",
+            "system_fingerprint": "fp_62a23a81ef",
+            "id": "chatcmpl-C2xRH76rjyF27ZGz60Eexw6FsnDf9",
+            "service_tier": "default",
+            "finish_reason": "tool_calls",
+            "logprobs": null
+          },
+          "raw": {
+            "step": {
+              "content": "",
+              "tool_calls": [],
+              "message_type": "ai"
+            }
+          },
+          "tags": { "replay": 0 }
+        },
+        {
+          "id": "1f075d38-43e0-6cc0-8002-a103bc14fbf0",
+          "type": "tool",
+          "name": "extract_text_from_pdf",
+          "created_at": "2025-08-10T10:19:36.569363+00:00",
+          "duration": 0.04979,
+          "content": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \nEmail: info@qwikresume.com\nWebsite: www.qwikresume.com\nLinkedIn: ... (full text here)",
+          "input": { "pdf_path": "resume/android-developer-1559034496.pdf" },
+          "output": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (same as content)",
+          "tool_calls": [
+            {
+              "name": "extract_text_from_pdf",
+              "args": { "pdf_path": "resume/android-developer-1559034496.pdf" },
+              "id": "call_IEVgipoF6WmJz0shPNA2j0Mr",
+              "type": "tool_call"
+            }
+          ],
+          "metrics": {},
+          "raw": {
+            "step": {
+              "content": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (same as content)",
+              "tool_calls": [
+                {
+                  "name": "extract_text_from_pdf",
+                  "args": { "pdf_path": "resume/android-developer-1559034496.pdf" },
+                  "id": "call_IEVgipoF6WmJz0shPNA2j0Mr",
+                  "type": "tool_call"
+                }
+              ],
+              "message_type": "tool"
+            }
+          },
+          "tags": { "replay": 0 }
+        },
+        {
+          "id": "1f075d38-fa30-60fc-8003-ed921ae30872",
+          "type": "thinking",
+          "name": "thinking",
+          "created_at": "2025-08-10T10:19:55.685913+00:00",
+          "duration": 19.11655,
+          "content": "",
+          "input": null,
+          "output": null,
+          "tool_calls": [],
+          "metrics": {
+            "token_usage": {
+              "completion_tokens": 1263,
+              "prompt_tokens": 832,
+              "total_tokens": 2095
+            }
+          },
+          "raw": {
+            "step": {
+              "content": "",
+              "tool_calls": [],
+              "message_type": "ai"
+            }
+          },
+          "tags": { "replay": 0 }
+        },
+        {
+          "id": "1f075d38-fa37-6d11-8004-1568f756ba2f",
+          "type": "tool",
+          "name": "prepare_parsing_prompt",
+          "created_at": "2025-08-10T10:19:55.689089+00:00",
+          "duration": 0.003176,
+          "content": "Based on the following full resume text, write a concise and impactful 2-3 sentence summary for a recruiter.\n\nText:\nAndroid Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (truncated)",
+          "input": {
+            "resume_text": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (truncated)"
+          },
+          "output": "Based on the following full resume text, write a concise and impactful 2-3 sentence summary for a recruiter.\n... (same as content)",
+          "tool_calls": [
+            {
+              "name": "prepare_parsing_prompt",
+              "args": { "resume_text": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (truncated)" },
+              "id": "call_SxJumcDzf928S7ccmI6dAgsO",
+              "type": "tool_call"
+            },
+            {
+              "name": "prepare_summary_prompt",
+              "args": { "resume_text": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (truncated)" },
+              "id": "call_Z5ZSXbWbSbSm2hIusQnHJULQ",
+              "type": "tool_call"
+            }
+          ],
+          "metrics": {},
+          "raw": {
+            "step": {
+              "content": "Based on the following full resume text, write a concise and impactful 2-3 sentence summary for a recruiter.\n... (truncated)",
+              "tool_calls": [
+                {
+                  "name": "prepare_parsing_prompt",
+                  "args": { "resume_text": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (truncated)" },
+                  "id": "call_SxJumcDzf928S7ccmI6dAgsO",
+                  "type": "tool_call"
+                },
+                {
+                  "name": "prepare_summary_prompt",
+                  "args": { "resume_text": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (truncated)" },
+                  "id": "call_Z5ZSXbWbSbSm2hIusQnHJULQ",
+                  "type": "tool_call"
+                }
+              ],
+              "message_type": "tool"
+            }
+          },
+          "tags": { "replay": 0 }
+        },
+        {
+          "id": "1f075d39-0f05-6333-8005-9db8353fe9b9",
+          "type": "output",
+          "name": "output",
+          "created_at": "2025-08-10T10:19:57.870366+00:00",
+          "duration": 2.181277,
+          "content": "The candidate, Robert Smith, possesses the required skill of Java, as indicated in the skills section of the resume. Here is a concise summary of his profile:\n\nRobert Smith is an experienced Android Developer with over 6 years in the IT industry, including 4+ years specializing in mobile application development for Android. He has a strong background in building custom user interfaces and has been involved in the full project lifecycle, from analysis and design to development and deployment. His technical expertise includes Java, Android SDK, and various development tools, making him a valuable asset for any mobile development team.",
+          "input": null,
+          "output": null,
+          "tool_calls": [],
+          "metrics": {
+            "token_usage": {
+              "completion_tokens": 117,
+              "prompt_tokens": 3480,
+              "total_tokens": 3597
+            }
+          },
+          "raw": {
+            "step": {
+              "content": "The candidate, Robert Smith, possesses the required skill of Java, as indicated in the skills section of the resume. Here is a concise summary of his profile:\n\nRobert Smith is an experienced Android Developer with over 6 years in the IT industry, including 4+ years specializing in mobile application development for Android. He has a strong background in building custom user interfaces and has been involved in the full project lifecycle, from analysis and design to development and deployment. His technical expertise includes Java, Android SDK, and various development tools, making him a valuable asset for any mobile development team.",
+              "tool_calls": [],
+              "message_type": "ai"
+            }
+          },
+          "tags": { "replay": 0 }
+        }
+      ]
+    },
+    {
+    "id": "run-1-task-2",
+    "name": "Task 2",
+    "created_at": "2025-08-10T10:21:29.719700+00:00",
+    "metadata": {},
+    "steps": [
+        {
+        "id": "1f075d3c-7af6-6bd1-8000-631f5420e676",
+        "type": "prompt",
+        "name": "prompt",
+        "created_at": "2025-08-10T10:21:29.719700+00:00",
+        "duration": 0,
+        "content": "Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill for this job is 'Machine Learning'. If the candidate has this skill, provide a summary. If not, send them a rejection email.",
+        "input": null,
+        "output": null,
+        "tool_calls": [],
+        "metrics": {},
+        "raw": {
+            "step": {
+            "content": "Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill for this job is 'Machine Learning'. If the candidate has this skill, provide a summary. If not, send them a rejection email.",
+            "tool_calls": [],
+            "message_type": "human"
+            }
+        },
+        "tags": { "replay": 0 }
+        },
+        {
+        "id": "1f075d3c-84a2-6def-8001-c14b5b949fbf",
+        "type": "thinking",
+        "name": "thinking",
+        "created_at": "2025-08-10T10:21:30.733924+00:00",
+        "duration": 1.014224,
+        "content": "",
+        "input": null,
+        "output": null,
+        "tool_calls": [],
+        "metrics": {
+            "token_usage": {
+            "completion_tokens": 26,
+            "prompt_tokens": 222,
+            "total_tokens": 248
+            },
+            "model_name": "gpt-4o-mini-2024-07-18"
+        },
+        "raw": {
+            "step": {
+            "content": "",
+            "tool_calls": [],
+            "message_type": "ai"
+            }
+        },
+        "tags": { "replay": 0 }
+        },
+        {
+        "id": "1f075d3c-8510-6a0c-8002-08cee29ecdd9",
+        "type": "tool",
+        "name": "extract_text_from_pdf",
+        "created_at": "2025-08-10T10:21:30.778881+00:00",
+        "duration": 0.044957,
+        "content": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (resume text)",
+        "input": { "pdf_path": "resume/android-developer-1559034496.pdf" },
+        "output": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (resume text)",
+        "tool_calls": [
+            {
+            "name": "extract_text_from_pdf",
+            "args": { "pdf_path": "resume/android-developer-1559034496.pdf" },
+            "id": "call_04mV8hVWEa7crtXOWrmJ9iHW",
+            "type": "tool_call"
+            }
+        ],
+        "metrics": {},
+        "raw": {
+            "step": {
+            "content": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (resume text)",
+            "tool_calls": [
+                {
+                "name": "extract_text_from_pdf",
+                "args": { "pdf_path": "resume/android-developer-1559034496.pdf" },
+                "id": "call_04mV8hVWEa7crtXOWrmJ9iHW",
+                "type": "tool_call"
+                }
+            ],
+            "message_type": "tool"
+            }
+        },
+        "tags": { "replay": 0 }
+        },
+        {
+        "id": "1f075d3e-393c-6506-8009-111afc61141b",
+        "type": "thinking",
+        "name": "thinking",
+        "created_at": "2025-08-10T10:22:16.514688+00:00",
+        "duration": 2.120743,
+        "content": "The candidate, Robert Smith, does not possess the required skill of \"Machine Learning\" as indicated in the resume. Therefore, I will send a rejection email to him.\n\nSending rejection email...",
+        "input": null,
+        "output": null,
+        "tool_calls": [],
+        "metrics": {
+            "token_usage": {
+            "completion_tokens": 73,
+            "prompt_tokens": 5961,
+            "total_tokens": 6034
+            }
+        },
+        "raw": {
+            "step": {
+            "content": "The candidate, Robert Smith, does not possess the required skill of \"Machine Learning\" as indicated in the resume. Therefore, I will send a rejection email to him.\n\nSending rejection email...",
+            "tool_calls": [],
+            "message_type": "ai"
+            }
+        },
+        "tags": { "replay": 0 }
+        },
+        {
+        "id": "1f075d3e-3940-6c31-800a-e65aeb696034",
+        "type": "tool",
+        "name": "send_rejection_email",
+        "created_at": "2025-08-10T10:22:16.516510+00:00",
+        "duration": 0.001822,
+        "content": "Rejection email successfully sent to info@qwikresume.com.",
+        "input": {
+            "candidate_name": "Robert Smith",
+            "candidate_email": "info@qwikresume.com",
+            "required_skill": "Machine Learning"
+        },
+        "output": "Rejection email successfully sent to info@qwikresume.com.",
+        "tool_calls": [
+            {
+            "name": "send_rejection_email",
+            "args": {
+                "candidate_name": "Robert Smith",
+                "candidate_email": "info@qwikresume.com",
+                "required_skill": "Machine Learning"
+            },
+            "id": "call_veW5Z8i3qkNwZdeV4nfQvXok",
+            "type": "tool_call"
+            }
+        ],
+        "metrics": {},
+        "raw": {
+            "step": {
+            "content": "Rejection email successfully sent to info@qwikresume.com.",
+            "tool_calls": [
+                {
+                "name": "send_rejection_email",
+                "args": {
+                    "candidate_name": "Robert Smith",
+                    "candidate_email": "info@qwikresume.com",
+                    "required_skill": "Machine Learning"
+                },
+                "id": "call_veW5Z8i3qkNwZdeV4nfQvXok",
+                "type": "tool_call"
+                }
+            ],
+            "message_type": "tool"
+            }
+        },
+        "tags": { "replay": 0 }
+        },
+        {
+        "id": "1f075d3e-443b-6086-800b-c6e24b3726ef",
+        "type": "output",
+        "name": "output",
+        "created_at": "2025-08-10T10:22:17.667597+00:00",
+        "duration": 1.151087,
+        "content": "The rejection email has been successfully sent to Robert Smith at info@qwikresume.com due to the absence of the required skill in Machine Learning. If you need any further assistance, feel free to ask!",
+        "input": null,
+        "output": null,
+        "tool_calls": [],
+        "metrics": {
+            "token_usage": {
+            "completion_tokens": 42,
+            "prompt_tokens": 6060,
+            "total_tokens": 6102
+            }
+        },
+        "raw": {
+            "step": {
+            "content": "The rejection email has been successfully sent to Robert Smith at info@qwikresume.com due to the absence of the required skill in Machine Learning. If you need any further assistance, feel free to ask!",
+            "tool_calls": [],
+            "message_type": "ai"
+            }
+        },
+        "tags": { "replay": 0 }
+        }
+    ]
+    }
+  ]
+  },
+  "run-2": {
+    "id": "run-2",
+    "created_at": "2025-08-10T10:22:17.674630+00:00",
+    "tasks": [
+    {
+      "id": "run-2-task-1",
+      "name": "Task 1",
+      "created_at": "2025-08-10T10:22:17.674630+00:00",
+      "metadata": {},
+      "steps": [
+        {
+        "id": "1f075d3e-444c-6345-8000-ceae6e8d2a05",
+        "type": "prompt",
+        "name": "prompt",
+        "created_at": "2025-08-10T10:22:17.674630+00:00",
+        "duration": 0,
+        "content": "\n    Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill is 'Null'. \n    If the candidate has this skill, provide a summary of their profile.\n    ",
+        "input": null,
+        "output": null,
+        "tool_calls": [],
+        "metrics": {},
+        "raw": {
+            "step": {
+            "content": "\n    Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill is 'Null'. \n    If the candidate has this skill, provide a summary of their profile.\n    ",
+            "tool_calls": [],
+            "message_type": "human"
+            }
+        },
+        "tags": { "replay": 0 }
+        },
+        {
+        "id": "1f075d3e-4f0a-6d0e-8001-1014a221ed30",
+        "type": "thinking",
+        "name": "thinking",
+        "created_at": "2025-08-10T10:22:18.801281+00:00",
+        "duration": 1.126651,
+        "content": "",
+        "input": null,
+        "output": null,
+        "tool_calls": [],
+        "metrics": {
+            "token_usage": {
+            "completion_tokens": 26,
+            "prompt_tokens": 217,
+            "total_tokens": 243
+            },
+            "model_name": "gpt-4o-mini-2024-07-18"
+        },
+        "raw": {
+            "step": {
+            "content": "",
+            "tool_calls": [],
+            "message_type": "ai"
+            }
+        },
+        "tags": { "replay": 0 }
+        },
+        {
+        "id": "1f075d3e-4f6d-6efb-8002-43c155d095ac",
+        "type": "tool",
+        "name": "extract_text_from_pdf",
+        "created_at": "2025-08-10T10:22:18.841881+00:00",
+        "duration": 0.0406,
+        "content": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \nEmail: info@qwikresume.com\nWebsite: www.qwikresume.com\nLinkedIn:\nlinkedin.com/qwikresume\nAddress: 1737 Marshville Road,\nAlabama.\nObjective\nOver 6 years of IT industry experience with 4+ years of experience as Mobile application developer in the field of Android. Experience in developing front end applications for Android phones. Experience developing mobile applications on Android platform, building Custom UI using Views, ViewGroups, Layouts, Widgets and graphics that scale based on the screen size using 9-patch images, localization, testing and publishing the applications to the Android Market.\nSkills\nPython, Java, C, Javascript, Matlab, R.\nWork Experience\nAndroid Developer\nABC Corporation  January 2011 – March 2012 ...",
+        "input": {
+            "pdf_path": "resume/android-developer-1559034496.pdf"
+        },
+        "output": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 ...",
+        "tool_calls": [
+            {
+            "name": "extract_text_from_pdf",
+            "args": { "pdf_path": "resume/android-developer-1559034496.pdf" },
+            "id": "call_RbxvBZt0gbEgWmdWbpXJXp71",
+            "type": "tool_call"
+            }
+        ],
+        "metrics": {},
+        "raw": {
+            "step": {
+            "content": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 ...",
+            "tool_calls": [
+                {
+                "name": "extract_text_from_pdf",
+                "args": { "pdf_path": "resume/android-developer-1559034496.pdf" },
+                "id": "call_RbxvBZt0gbEgWmdWbpXJXp71",
+                "type": "tool_call"
+                }
+            ],
+            "message_type": "tool"
+            }
+        },
+        "tags": { "replay": 0 }
+        },
+        {
+        "id": "1f075d40-298d-67ac-8009-fc6973a72755",
+        "type": "output",
+        "name": "output",
+        "created_at": "2025-08-10T10:23:08.557303+00:00",
+        "duration": 1.87729,
+        "content": "The candidate, Robert Smith, is an experienced Android Developer with over 6 years in the IT industry, including 4+ years specifically in mobile application development for Android. He has a strong background in creating custom user interfaces and has been involved in the full project lifecycle, from analysis and design to development and deployment. His technical skills include proficiency in Python, Java, C, and JavaScript, among others, making him a versatile asset for any development team.",
+        "input": null,
+        "output": null,
+        "tool_calls": [],
+        "metrics": {
+            "token_usage": {
+            "completion_tokens": 93,
+            "prompt_tokens": 5942,
+            "total_tokens": 6035
+            },
+            "model_name": "gpt-4o-mini-2024-07-18"
+        },
+        "raw": {
+            "step": {
+            "content": "The candidate, Robert Smith, is an experienced Android Developer with over 6 years in the IT industry, including 4+ years specifically in mobile application development for Android. He has a strong background in creating custom user interfaces and has been involved in the full project lifecycle, from analysis and design to development and deployment. His technical skills include proficiency in Python, Java, C, and JavaScript, among others, making him a versatile asset for any development team.",
+            "tool_calls": [],
+            "message_type": "ai"
+            }
+        },
+        "tags": { "replay": 0 }
+        }
+    ]
+    }
+    ]
+}
+}
