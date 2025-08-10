@@ -1,0 +1,35 @@
+{'agent': {'messages': [AIMessage(content='', additional_kwargs={'tool_calls': [
+                    {'id': 'call_kHpWdTGPZAdZW9SlRKTVJVDn', 'function': {'arguments': '{
+                                "city": "San Francisco"
+                            }', 'name': 'get_weather'
+                        }, 'type': 'function'
+                    }
+                ], 'refusal': None
+            }, response_metadata={'token_usage': {'completion_tokens': 15, 'prompt_tokens': 56, 'total_tokens': 71, 'completion_tokens_details': {'accepted_prediction_tokens': 0, 'audio_tokens': 0, 'reasoning_tokens': 0, 'rejected_prediction_tokens': 0
+                    }, 'prompt_tokens_details': {'audio_tokens': 0, 'cached_tokens': 0
+                    }
+                }, 'model_name': 'gpt-4.1-2025-04-14', 'system_fingerprint': 'fp_51e1070cf2', 'id': 'chatcmpl-C2lwOk5xfRZoi7ljvTbS47m3ax941', 'service_tier': 'default', 'finish_reason': 'tool_calls', 'logprobs': None
+            }, id='run--7f0db4eb-bfe8-4426-b840-52f2ff69b005-0', tool_calls=[
+                {'name': 'get_weather', 'args': {'city': 'San Francisco'
+                    }, 'id': 'call_kHpWdTGPZAdZW9SlRKTVJVDn', 'type': 'tool_call'
+                }
+            ], usage_metadata={'input_tokens': 56, 'output_tokens': 15, 'total_tokens': 71, 'input_token_details': {'audio': 0, 'cache_read': 0
+                }, 'output_token_details': {'audio': 0, 'reasoning': 0
+                }
+            })
+        ]
+    }
+}
+{'tools': {'messages': [ToolMessage(content="It's always sunny in San Francisco!", name='get_weather', id='c9c48383-812b-4ff5-826b-a68d4e69618c', tool_call_id='call_kHpWdTGPZAdZW9SlRKTVJVDn')
+        ]
+    }
+}
+
+
+
+{'agent': {'messages': [AIMessage(content="It's always sunny in San Francisco! If you need more detailed or up-to-date weather information, let me know.", additional_kwargs={'refusal': None
+            }, response_metadata={'token_usage': {'completion_tokens': 24, 'prompt_tokens': 86, 'total_tokens': 110, 'completion_tokens_details': {'accepted_prediction_tokens': 0, 'audio_tokens': 0, 'reasoning_tokens': 0, 'rejected_prediction_tokens': 0
+                    }, 'prompt_tokens_details': {'audio_tokens': 0, 'cached_tokens': 0
+                    }
+                }, 'model_name': 'gpt-4.1-2025-04-14', 'system_fingerprint': 'fp_51e1070cf2', 'id': 'chatcmpl-C2lwOhRkmdHH0RH1KIDpaUFNK3z8O', 'service_tier': 'default', 'finish_reason': 'stop', 'logprobs': None
+            }, id='run--df3c6fad-dcba-4450-858b-221c8fe299e5-0', usage_metadata={'input_tokens
