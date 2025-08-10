@@ -295,7 +295,7 @@ export default function AgentOpsDashboard() {
       {/* footer */}
       <section className="col-start-2 col-end-4 row-start-2 border-t bg-white">
         {/* histogram */}
-        <div className="px-4 py-2 text-xs text-gray-600">Steps duration</div>
+        <div className="px-4 py-2 text-xs text-gray-600">Steps</div>
         <div className="px-4 pb-3">
           <div className="h-24 flex items-end gap-2">
             {histogram.map((b) => (

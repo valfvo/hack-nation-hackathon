@@ -12,14 +12,10 @@
         {
           "id": "1f075d38-3940-6315-8000-81041e2e3928",
           "type": "prompt",
-          "name": "prompt",
+          "name": "Prompt",
           "created_at": "2025-08-10T10:19:35.455003+00:00",
           "duration": 0,
           "content": "\n    Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill is 'Java'. \n    If the candidate has this skill, provide a summary of their profile.\n    ",
-          "input": null,
-          "output": null,
-          "tool_calls": [],
-          "metrics": {},
           "raw": {
             "step": {
               "content": "\n    Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill is 'Java'. \n    If the candidate has this skill, provide a summary of their profile.\n    ",
@@ -32,13 +28,9 @@
         {
           "id": "1f075d38-4367-63d4-8001-d10683ecaa5f",
           "type": "thinking",
-          "name": "thinking",
+          "name": "Thinking",
           "created_at": "2025-08-10T10:19:36.519573+00:00",
-          "duration": 1.06457,
-          "content": "",
-          "input": null,
-          "output": null,
-          "tool_calls": [],
+          "duration": 2.06457,
           "metrics": {
             "token_usage": {
               "completion_tokens": 26,
@@ -66,7 +58,7 @@
           "type": "tool",
           "name": "extract_text_from_pdf",
           "created_at": "2025-08-10T10:19:36.569363+00:00",
-          "duration": 0.04979,
+          "duration": 3.04979,
           "content": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \nEmail: info@qwikresume.com\nWebsite: www.qwikresume.com\nLinkedIn: ... (full text here)",
           "input": { "pdf_path": "resume/android-developer-1559034496.pdf" },
           "output": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (same as content)",
@@ -98,13 +90,9 @@
         {
           "id": "1f075d38-fa30-60fc-8003-ed921ae30872",
           "type": "thinking",
-          "name": "thinking",
+          "name": "Thinking",
           "created_at": "2025-08-10T10:19:55.685913+00:00",
-          "duration": 19.11655,
-          "content": "",
-          "input": null,
-          "output": null,
-          "tool_calls": [],
+          "duration": 7.11655,
           "metrics": {
             "token_usage": {
               "completion_tokens": 1263,
@@ -126,7 +114,7 @@
           "type": "tool",
           "name": "prepare_parsing_prompt",
           "created_at": "2025-08-10T10:19:55.689089+00:00",
-          "duration": 0.003176,
+          "duration": 1.003176,
           "content": "Based on the following full resume text, write a concise and impactful 2-3 sentence summary for a recruiter.\n\nText:\nAndroid Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (truncated)",
           "input": {
             "resume_text": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (truncated)"
@@ -172,13 +160,10 @@
         {
           "id": "1f075d39-0f05-6333-8005-9db8353fe9b9",
           "type": "output",
-          "name": "output",
+          "name": "Output",
           "created_at": "2025-08-10T10:19:57.870366+00:00",
           "duration": 2.181277,
           "content": "The candidate, Robert Smith, possesses the required skill of Java, as indicated in the skills section of the resume. Here is a concise summary of his profile:\n\nRobert Smith is an experienced Android Developer with over 6 years in the IT industry, including 4+ years specializing in mobile application development for Android. He has a strong background in building custom user interfaces and has been involved in the full project lifecycle, from analysis and design to development and deployment. His technical expertise includes Java, Android SDK, and various development tools, making him a valuable asset for any mobile development team.",
-          "input": null,
-          "output": null,
-          "tool_calls": [],
           "metrics": {
             "token_usage": {
               "completion_tokens": 117,
@@ -210,10 +195,6 @@
         "created_at": "2025-08-10T10:21:29.719700+00:00",
         "duration": 0,
         "content": "Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill for this job is 'Machine Learning'. If the candidate has this skill, provide a summary. If not, send them a rejection email.",
-        "input": null,
-        "output": null,
-        "tool_calls": [],
-        "metrics": {},
         "raw": {
             "step": {
             "content": "Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill for this job is 'Machine Learning'. If the candidate has this skill, provide a summary. If not, send them a rejection email.",
@@ -226,13 +207,9 @@
         {
         "id": "1f075d3c-84a2-6def-8001-c14b5b949fbf",
         "type": "thinking",
-        "name": "thinking",
+        "name": "Thinking",
         "created_at": "2025-08-10T10:21:30.733924+00:00",
-        "duration": 1.014224,
-        "content": "",
-        "input": null,
-        "output": null,
-        "tool_calls": [],
+        "duration": 5.014224,
         "metrics": {
             "token_usage": {
             "completion_tokens": 26,
@@ -255,7 +232,7 @@
         "type": "tool",
         "name": "extract_text_from_pdf",
         "created_at": "2025-08-10T10:21:30.778881+00:00",
-        "duration": 0.044957,
+        "duration": 4.044957,
         "content": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (resume text)",
         "input": { "pdf_path": "resume/android-developer-1559034496.pdf" },
         "output": "Android Developer\nROBERT SMITH\nPhone: (123) 456 78 99 \n... (resume text)",
@@ -287,13 +264,10 @@
         {
         "id": "1f075d3e-393c-6506-8009-111afc61141b",
         "type": "thinking",
-        "name": "thinking",
+        "name": "Thinking",
         "created_at": "2025-08-10T10:22:16.514688+00:00",
         "duration": 2.120743,
         "content": "The candidate, Robert Smith, does not possess the required skill of \"Machine Learning\" as indicated in the resume. Therefore, I will send a rejection email to him.\n\nSending rejection email...",
-        "input": null,
-        "output": null,
-        "tool_calls": [],
         "metrics": {
             "token_usage": {
             "completion_tokens": 73,
@@ -315,7 +289,7 @@
         "type": "tool",
         "name": "send_rejection_email",
         "created_at": "2025-08-10T10:22:16.516510+00:00",
-        "duration": 0.001822,
+        "duration": 2.001822,
         "content": "Rejection email successfully sent to info@qwikresume.com.",
         "input": {
             "candidate_name": "Robert Smith",
@@ -359,13 +333,10 @@
         {
         "id": "1f075d3e-443b-6086-800b-c6e24b3726ef",
         "type": "output",
-        "name": "output",
+        "name": "Output",
         "created_at": "2025-08-10T10:22:17.667597+00:00",
         "duration": 1.151087,
         "content": "The rejection email has been successfully sent to Robert Smith at info@qwikresume.com due to the absence of the required skill in Machine Learning. If you need any further assistance, feel free to ask!",
-        "input": null,
-        "output": null,
-        "tool_calls": [],
         "metrics": {
             "token_usage": {
             "completion_tokens": 42,
@@ -399,7 +370,7 @@
         {
         "id": "1f075d3e-444c-6345-8000-ceae6e8d2a05",
         "type": "prompt",
-        "name": "prompt",
+        "name": "Prompt",
         "created_at": "2025-08-10T10:22:17.674630+00:00",
         "duration": 0,
         "content": "\n    Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill is 'Null'. \n    If the candidate has this skill, provide a summary of their profile.\n    ",
@@ -419,13 +390,9 @@
         {
         "id": "1f075d3e-4f0a-6d0e-8001-1014a221ed30",
         "type": "thinking",
-        "name": "thinking",
+        "name": "Thinking",
         "created_at": "2025-08-10T10:22:18.801281+00:00",
         "duration": 1.126651,
-        "content": "",
-        "input": null,
-        "output": null,
-        "tool_calls": [],
         "metrics": {
             "token_usage": {
             "completion_tokens": 26,
