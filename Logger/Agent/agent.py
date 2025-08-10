@@ -23,7 +23,6 @@ os.environ["OPENAI_API_KEY"] = api_key
 
 # ==============================================================================
 # SECTION 1: TRANSFORMER LES FONCTIONS EN OUTILS DÉCOUVERABLES
-# Les docstrings sont CRUCIALES ici : l'agent les lit pour savoir quel outil utiliser.
 # ==============================================================================
 
 
@@ -39,7 +38,6 @@ def extract_text_from_pdf(pdf_path: str) -> str:
         return f"Error while reading the PDF: {e}"
 
 
-# Les modèles Pydantic sont maintenant utilisés pour structurer la sortie des outils
 class ParsedDetails(BaseModel):
     """Structure for the factual information extracted from a resume."""
 
@@ -58,14 +56,22 @@ def parse_resume_details(resume_text: str) -> ParsedDetails:
     return structured_llm.invoke(prompt)
 
 
+# === CORRECTION ICI ===
 @tool
-def create_summary(resume_text: str, parsed_details: dict) -> str:
-    """Creates a concise 2-3 sentence summary of a candidate's profile based on their full resume text and already parsed details."""
+def create_summary(resume_text: str) -> str:
+    """
+    Creates a concise 2-3 sentence summary of a candidate's profile based on their full resume text.
+    This tool should be used after the resume text has been extracted.
+    """
     print(f"--- TOOL: create_summary ---")
     llm = ChatOpenAI(temperature=0.2, model_name="gpt-4o-mini")
-    prompt = f"Based on the resume text and structured details, write a concise summary.\nDetails: {json.dumps(parsed_details)}\nText: {resume_text}\nSummary:"
+    # Le prompt demande maintenant au LLM de faire le travail complet de lecture et de résumé
+    prompt = f"Based on the following full resume text, write a concise and impactful 2-3 sentence summary for a recruiter.\n\nText:\n{resume_text}\n\nSummary:"
     response = llm.invoke(prompt)
     return response.content
+
+
+# === FIN DE LA CORRECTION ===
 
 
 @tool
@@ -77,12 +83,13 @@ def send_rejection_email(
     email_subject = "Update on your application with Yubu.ai Inc."
     email_body = f"Dear {candidate_name},\n\nThank you for your interest... particularly regarding experience with '{required_skill}'.\n\nSincerely,\nThe Yubu.ai Inc."
 
-    # Simulation
     print("\n--- 📧 SIMULATING EMAIL SEND ---")
     print(f"To: {candidate_email}\nSubject: {email_subject}\n---\n{email_body}\n---")
 
     return f"Rejection email successfully sent to {candidate_email}."
 
+
+# ... le reste du code (sections 2, 3) est identique ...
 
 # ==============================================================================
 # SECTION 2: DÉFINIR L'ÉTAT ET LE GRAPHE DE L'AGENT
