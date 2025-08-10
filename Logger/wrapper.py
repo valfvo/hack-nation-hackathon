@@ -37,6 +37,14 @@ class LoggingAgentWrapper:
         else:
             raise Exception(f"Failed to upload step: {response.text}")
 
+    def get_message_type(self, _type):
+        if _type == "tool":
+            return "tool"
+        elif _type == "human":
+            return "prompt"
+        elif _type == "ai":
+            return "thinking"
+
     def invoke(self, args, config=None):
         if config is None:
             config = {"configurable": {"thread_id": "1"}}
@@ -50,8 +58,7 @@ class LoggingAgentWrapper:
 
         last_tool_call = []
         last_timestamp = None
-        for state in reversed(states[:-1]):
-        
+        for i, state in enumerate(reversed(states[:-1])):
             checkpoint_id = state.config.get("configurable", {}).get("checkpoint_id", "N/A")
             thread_id = state.config.get("configurable", {}).get("thread_id", "N/A")
             values = state.values if state.values else {}
@@ -68,12 +75,15 @@ class LoggingAgentWrapper:
 
             self.states[checkpoint_id] = state
             
-            message_type = "unknown"
+            message_type = ""
             metadata = {}
             tool_calls = []
             if len(curr_messages) > 0:
                 content = curr_messages[-1].content
-                message_type = curr_messages[-1].type if hasattr(curr_messages[-1], 'type') else "unknown"
+                if i == len(states) -2:  # Last message in the state
+                   message_type = "output"
+                else:
+                    message_type = self.get_message_type(curr_messages[-1].type) if hasattr(curr_messages[-1], 'type') else "unknown"
                 metadata = curr_messages[-1].response_metadata
                 tool_calls = curr_messages[-1].tool_calls if hasattr(curr_messages[-1], 'tool_calls') else []
             # print(f"[LOG] Checkpoint ID: {checkpoint_id}, Created At: {created_at}, Content: {content}, Thread ID: {thread_id}")
