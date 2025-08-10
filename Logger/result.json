@@ -1,0 +1,35 @@
+{
+    "full_name": "ROBERT SMITH",
+    "email": "info@qwikresume.com",
+    "phone_number": "(123) 456 78 99",
+    "skills": [
+        "Python",
+        "Java",
+        "C",
+        "Javascript",
+        "Matlab",
+        "R"
+    ],
+    "education": [
+        {
+            "degree": "IT Technology",
+            "school": "Gyumri Information Technologies Center",
+            "year": "2011"
+        }
+    ],
+    "work_experience": [
+        {
+            "role": "Android Developer",
+            "company": "ABC Corporation",
+            "duration": "January 2011 – March 2012",
+            "description": "Involved in the full life cycle of the project including analysis design, development, debugging, testing, and deployment. Developed the application from specifications and requirement gathering. Independently handled modules, scope, analysis, design, build, test the code, debug and implement application. Developed products section of the application which provided Multiple Activities, Custom Adapters, Base Adapter, List views, Links, Web View, Text Views and so on. Developed Navigation Drawer for the application, which provides better navigation of apps features. Created new UI Screens and key resource for layout UI work utilizing xml, Shape Drawable, Text View, List View, Web View, Buttons, Activities, and Frame Layout."
+        },
+        {
+            "role": "Android Developer",
+            "company": "ABC Corporation",
+            "duration": "2006 – 2011",
+            "description": "Helped Develop Insight, which is a tablet application that retrieves data from a CPE and displays it. This is done to debug the DSL activity in someone's home. Pulled info from a cloud server and coded it onto a tablet. Worked on UI and backend construction. Connected to various computer boards where I retrieved Wi-Fi information from a server - Debugged code that was previously worked on by an outsourced company. There were many bugs and crashes in the app, and I cleaned them all, despite the size of the code. Retrieved wiring and noise data from the CPE by connecting the tablet to the same network."
+        }
+    ],
+    "concise_summary": "Robert Smith is an experienced Android Developer with over 6 years in the IT industry, including 4+ years focused on mobile application development. He has a strong background in building custom user interfaces and managing the full project lifecycle, from analysis and design to deployment, utilizing skills in Python, Java, and various Android development tools. Robert holds a degree in IT Technology from Gyumri Information Technologies Center, earned in 2011."
+}
