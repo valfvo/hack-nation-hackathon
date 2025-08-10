@@ -68,10 +68,8 @@ class LoggingAgentWrapper:
         # Call the API task endpoint with config as part of the request
         run_id = self.create_run()
 
-        # 2. Utilisez ce nouveau run_id pour créer la tâche.
         task_id = self.create_task({"run_id": run_id})
 
-        # On attache le vrai run_id à la configuration pour le reste du processus
         config["configurable"]["thread_id"] = run_id
 
         result = self.agent.invoke(args, config)
