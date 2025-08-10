@@ -205,15 +205,10 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 ## Team Member Credits
 
-This project was developed during the Hack Nation hackathon by a dedicated team of developers passionate about AI operations and compliance monitoring.
-
-### Team Members
-
 - Bryn Chen
 - Jules Decaestecker
 - Alice Delvider
 - Valentin Fontaine
-
 
 ### Contributing
 
