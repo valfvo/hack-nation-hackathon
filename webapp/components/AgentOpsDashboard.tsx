@@ -30,12 +30,6 @@ type Run = {
   tasks: Task[];
 };
 
-type RunInfo = {
-  id: string;
-  created_at: string;
-  tasks_count: string;
-}
-
 // -----------------------------
 // Utility helpers
 // -----------------------------
@@ -71,7 +65,7 @@ function flatten(run?: Run) {
 // -----------------------------
 
 export default function AgentOpsDashboard() {
-  const [runs, setRuns] = useState<RunInfo[]>([]);
+  const [runs, setRuns] = useState<string[]>([]);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [selected, setSelected] = useState<{ step: Step; task: Task; taskIndex: number; stepIndex: number } | null>(null);
@@ -81,16 +75,15 @@ export default function AgentOpsDashboard() {
     fetch('http://localhost:8000/runs', {method: 'GET'})
     .then((r) => r.json())
     .then((data) => {
-      const run_list = (data as RunInfo[]);
+      const run_list = (data as { runs: string[] }).runs;
       setRuns(run_list);
       if (run_list.length > 0) {
-        setSelectedRunId(run_list[0].id);
+        setSelectedRunId(run_list[0]);
       }
     });
   }, []);
 
   useEffect(() => {
-    console.log('id:', selectedRunId);
     if (!selectedRunId) return;
     setRun(null);
     setSelected(null);
@@ -137,14 +130,13 @@ export default function AgentOpsDashboard() {
           data: {
             label: (
               <div className={`flex items-center justify-between gap-3 px-3 py-2 border rounded-xl ${stepColor[s.type]}`}>
-                <span className="font-medium">{s.title || s.type}</span>
+                <span className="font-medium">{`[${s.type}] ${s.name}`}</span>
                 <div className="text-xs opacity-80 flex gap-2">
-                  {s.type !== "prompt" && (
-                    <>
-                      <span>{fmtTime(s.timestamp)}</span>
-                      <span>· {fmtDuration(s.duration)}</span>
-                    </>
+                  <span>{fmtTime(s.created_at)}</span>
+                  {s.hasOwnProperty("duration") && (
+                    <span>· {fmtDuration(s.duration)}</span>
                   )}
+                  <span className="text-xs text-gray-500"></span>
                 </div>
               </div>
             ),
@@ -170,6 +162,16 @@ export default function AgentOpsDashboard() {
     return { nodes, edges };
   }, [run]);
 
+  const getHistogramColor = (stepType: StepType, isSelected: boolean) => {
+    const colors = {
+      thinking: isSelected ? "bg-green-300 border-green-500" : "bg-green-100 border-green-300",
+      tool: isSelected ? "bg-blue-500 border-blue-700" : "bg-blue-200 border-blue-400",
+      output: isSelected ? "bg-green-500 border-green-700" : "bg-green-200 border-green-400",
+      prompt: isSelected ? "bg-green-500 border-green-700" : "bg-green-200 border-green-400", // fallback
+    };
+    return colors[stepType];
+  };
+
   // Histogram data (all non-prompt steps in the run)
   const histogram = useMemo(() => {
     const items = flat.filter((f) => f.step.type !== "prompt");
@@ -179,6 +181,7 @@ export default function AgentOpsDashboard() {
       h: ((i.step.duration || 0) / max) * 100,
       duration: i.step.duration || 0,
       label: i.step.title || i.step.type,
+      type: i.step.type, // Add step type
       ti: i.taskIndex,
     }));
   }, [flat]);
@@ -207,15 +210,15 @@ export default function AgentOpsDashboard() {
       <aside className="col-start-1 row-span-2 border-r bg-white">
         <div className="px-4 py-3 font-semibold">Runs</div>
         <div className="space-y-2 px-3 pb-4 overflow-auto h-[calc(100%-44px)]">
-          {runs.map((info) => (
+          {runs.map((run_id) => (
             <button
-              key={info.id}
-              onClick={() => setSelectedRunId(info.id)}
+              key={run_id}
+              onClick={() => setSelectedRunId(run_id)}
               className={`w-full text-left px-3 py-2 rounded-lg border ${
-                selectedRunId === info.id ? "bg-green-100 border-green-400" : "bg-white hover:bg-gray-50"
+                selectedRunId === run_id ? "bg-green-100 border-green-400" : "bg-white hover:bg-gray-50"
               }`}
             >
-              {info.id}
+              {run_id}
             </button>
           ))}
         </div>
@@ -253,9 +256,14 @@ export default function AgentOpsDashboard() {
                 {selected.step.name}
               </span>
               <span className="text-xs text-gray-500">
-                {selected.step.type !== "prompt" && (
+                {selected.step.hasOwnProperty("created_at") && (
                   <>
-                    {fmtTime(selected.step.created_at)} · {fmtDuration(selected.step.duration)}
+                    {fmtTime(selected.step.created_at)}
+                  </>
+                )}
+                {selected.step.hasOwnProperty("duration") && (
+                  <>
+                    · {fmtDuration(selected.step.duration)}
                   </>
                 )}
               </span>
@@ -264,38 +272,22 @@ export default function AgentOpsDashboard() {
             "Step details"
           )}
         </div>
-        <div className="p-4 space-y-3 overflow-auto h-[calc(100%-48px)]">
+        <div className="p-4 space-y-3 overflow-auto h-[calc(100%-48px)] max-h-[calc(100vh-278px)]">
           {!selected ? (
             <div className="text-gray-500">Click any step in the graph to see details.</div>
-          ) : selected.step.type === "prompt" ? (
-            <div>
-              <div className="text-xs uppercase text-gray-500 mb-1">Prompt</div>
-              <div className="whitespace-pre-wrap font-mono text-[13px] bg-gray-50 p-3 rounded border">{selected.step.text}</div>
-            </div>
-          ) : selected.step.type === "thinking" ? (
-            <>
-              <div>
-                <div className="text-xs uppercase text-gray-500 mb-1">Thinking tokens</div>
-                <div className="bg-gray-50 p-3 rounded border font-mono text-[13px] whitespace-pre-wrap">
-                  {selected.step.content}
-                </div>
-              </div>
-              <div className="text-xs text-gray-600">Tokens: {selected.step.tokens}</div>
-            </>
-          ) : selected.step.type === "tool" ? (
-            <>
-              <div className="text-xs uppercase text-gray-500">input</div>
-              <pre className="bg-gray-50 p-3 rounded border text-[12px] overflow-auto">{JSON.stringify(selected.step.input, null, 2)}</pre>
-              <div className="text-xs uppercase text-gray-500 mt-3">output</div>
-              <pre className="bg-gray-50 p-3 rounded border text-[12px] overflow-auto">{JSON.stringify(selected.step.output, null, 2)}</pre>
-              <div className="text-xs uppercase text-gray-500 mt-3">attribute</div>
-              <pre className="bg-gray-50 p-3 rounded border text-[12px] overflow-auto">{JSON.stringify(selected.step.attributes, null, 2)}</pre>
-            </>
           ) : (
-            <div>
-              <div className="text-xs uppercase text-gray-500 mb-1">output</div>
-              <div className="bg-gray-50 p-3 rounded border font-mono text-[13px] whitespace-pre-wrap">{selected.step.text}</div>
-            </div>
+            <>
+              {Object.entries(selected.step)
+                .filter(([key]) => !['id', 'type', 'name', 'created_at', 'duration'].includes(key))
+                .map(([key, value]) => (
+                  <div key={key}>
+                    <div className="text-xs uppercase text-gray-500">{key}</div>
+                    <pre className="bg-gray-50 p-3 rounded border text-[12px] overflow-auto">
+                      {JSON.stringify(value, null, 2)}
+                    </pre>
+                  </div>
+                ))}
+            </>
           )}
         </div>
       </aside>
@@ -309,11 +301,7 @@ export default function AgentOpsDashboard() {
             {histogram.map((b) => (
               <div key={b.key} className="flex flex-col items-center" title={`${b.label} • ${b.duration}s`}>
                 <div
-                  className={`w-5 rounded-t border ${
-                    selected?.step.id === b.key 
-                      ? "bg-blue-500 border-blue-700" 
-                      : "bg-blue-200 border-blue-400"
-                  }`}
+                  className={`w-5 rounded-t border ${getHistogramColor(b.type, selected?.step.id === b.key)}`}
                   style={{ height: `${Math.max(10, (b.h / 100) * 96)}px` }}
                 />
                 <div className="text-[10px] mt-1 text-gray-500">{b.duration.toFixed(0)}s</div>
