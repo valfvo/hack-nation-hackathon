@@ -126,7 +126,7 @@ def create_run():
     with DB_LOCK:
         DB["runs"][run_id] = {
             "id": run_id,
-            "created_at_ms": now_ms(),
+            "created_at": now_ms(),
             "tasks": []
         }
     return {"run_id": run_id}
@@ -139,7 +139,7 @@ def create_task(payload: TaskCreate):
     task_obj = {
         "id": task_id,
         "name": payload.name or f"task {task_index+1}",
-        "created_at_ms": now_ms(),
+        "created_at": now_ms(),
         "metadata": payload.metadata,
         "steps": []
     }
@@ -302,7 +302,7 @@ def list_runs():
     return [
         {
             "id": run["id"],
-            "created_at": to_iso(run["created_at_ms"]),
+            "created_at": to_iso(run["created_at"]),
             "tasks_count": len(run.get("tasks", [])),
         }
         for run in DB["runs"].values()

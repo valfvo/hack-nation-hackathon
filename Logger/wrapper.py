@@ -19,7 +19,7 @@ class LoggingAgentWrapper:
         diff = (current_ts - last_ts).total_seconds()
         return diff
 
-    def create_taksk(self, args):
+    def create_task(self, args):
         # Call the API task endpoint with args as part of the request
         return "id"
         response = requests.post(f"{API_URL}/task", json=args)
@@ -28,13 +28,21 @@ class LoggingAgentWrapper:
         else:
             raise Exception(f"Failed to create task: {response.text}")
 
+    def upload_step(self, dict_step):
+        # Call the API step endpoint with dict_step as part of the request
+        return "ok"
+        response = requests.post(f"{API_URL}/step", json=dict_step)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"Failed to upload step: {response.text}")
+
     def invoke(self, args, config=None):
         if config is None:
             config = {"configurable": {"thread_id": "1"}}
         # Call the API task endpoint with config as part of the request
-        
-        args = { "run_id": config["configurable"]["thread_id"]}
-        run_id = self.create_taksk(args)
+        run_id = config["configurable"]["thread_id"]
+        task_id = self.create_task({ "run_id": run_id })
         #response = requests.post(f"{API_URL}/task", json=args)
 
         result = self.agent.invoke(args, config)
@@ -69,23 +77,32 @@ class LoggingAgentWrapper:
                 metadata = curr_messages[-1].response_metadata
                 tool_calls = curr_messages[-1].tool_calls if hasattr(curr_messages[-1], 'tool_calls') else []
             # print(f"[LOG] Checkpoint ID: {checkpoint_id}, Created At: {created_at}, Content: {content}, Thread ID: {thread_id}")
-            dict_state = {
-                "id": checkpoint_id,
-                "created_at": created_at,
+            
+            step_dict = {
                 "content": content,
-                "thread_id": thread_id,
-                "message_type": message_type,
-                "metadata": metadata,
                 "tool_calls": last_tool_call,
+                "message_type": message_type,
+            }
+
+            metrics_dict = {
+                "created_at": created_at,
                 "duration": duration,
+                "metadata": metadata,
+            }
+            dict_state = {
+                "task_id": task_id,
+                "run_id": run_id,
+                "step_id": checkpoint_id,
+                "step": step_dict,
+                "metrics": metrics_dict,
                 # "values": values
             }
-         
+            print(f"[LOG] State: {dict_state}")
+            self.upload_step(dict_state)
             # print(f"[LOG] State: {dict_state}")
             # if "parsed_details" in values:
             #     print(values["parsed_details"])
-            # last_tool_call = tool_calls
-            print(values.keys())
+            last_tool_call = tool_calls
         return result
 
     def stream(self, args, config):
