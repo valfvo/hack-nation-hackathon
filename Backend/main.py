@@ -1,23 +1,44 @@
-# backend/app/main.py
 from __future__ import annotations
-import os, threading, time, uuid
+import os
+import io
+import csv
+import time
+import json
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional, List
+from threading import Lock
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-# ======================================================================================
-# In-memory DB
-# ======================================================================================
-DB: Dict[str, Any] = {"runs": {}}
-DB_LOCK = threading.Lock()
+from helper import make_step, gather_task_texts, score_text, DEFAULT_THRESHOLD
 
-def now_ms() -> int:
-    return int(time.time() * 1000)
+# --------------------------------------------------------------------------
+# In-memory DB + lock
+# --------------------------------------------------------------------------
+with open("runs.json", "r", encoding="utf-8") as f:
+    DB = {"runs": json.load(f)}
+DB_LOCK = Lock()
 
-# ======================================================================================
-# Data models
-# ======================================================================================
+# --------------------------------------------------------------------------
+# App setup
+# --------------------------------------------------------------------------
+app = FastAPI(title="AgentOps Replay – Flat Steps Model with Compliance")
+
+origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"] if origins == ["*"] else origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --------------------------------------------------------------------------
+# Models
+# --------------------------------------------------------------------------
 class Metrics(BaseModel):
     exec_time_ms: Optional[int] = None
     input_tokens: Optional[int] = None
@@ -37,33 +58,29 @@ class TaskCreate(BaseModel):
     name: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-class PromptIn(BaseModel):
+class InputIn(BaseModel):
     run_id: str
     task_id: str
-    prompt: Dict[str, Any]
+    input: Dict[str, Any]
     metrics: Optional[Metrics] = None
-    ts_ms: Optional[int] = None
 
 class ThinkingIn(BaseModel):
     run_id: str
     task_id: str
     thinking: Dict[str, Any]
     metrics: Optional[Metrics] = None
-    ts_ms: Optional[int] = None
 
 class ToolIn(BaseModel):
     run_id: str
     task_id: str
     tool: Dict[str, Any]
     metrics: Optional[Metrics] = None
-    ts_ms: Optional[int] = None
 
 class OutputIn(BaseModel):
     run_id: str
     task_id: str
     output: Dict[str, Any]
     metrics: Optional[Metrics] = None
-    ts_ms: Optional[int] = None
 
 class ReplayIn(BaseModel):
     run_id: str
@@ -71,177 +88,111 @@ class ReplayIn(BaseModel):
     step_id: str
     patch: Optional[Dict[str, Any]] = None
 
-# ======================================================================================
-# App setup
-# ======================================================================================
-app = FastAPI(title="AgentOps Replay – prompt_chain model (dict DB)")
+class ComplianceCheckIn(BaseModel):
+    run_id: str
+    task_id: Optional[str] = None
+    threshold: Optional[float] = None
 
-origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"] if origins == ["*"] else origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ======================================================================================
+# --------------------------------------------------------------------------
 # Helpers
-# ======================================================================================
+# --------------------------------------------------------------------------
+def now_ms():
+    return int(time.time() * 1000)
+
+def to_iso(ts_ms):
+    return datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).isoformat().replace("+00:00", "Z")
+
 def _require_run(run_id: str) -> Dict[str, Any]:
     run = DB["runs"].get(run_id)
     if not run:
         raise HTTPException(404, "run not found")
     return run
 
-def _require_task(run: Dict[str, Any], task_id: str) -> Dict[str, Any]:
-    task = run["tasks"].get(task_id)
-    if not task:
-        raise HTTPException(404, "task not found")
-    return task
-
-def _current_prompt_chain(task: Dict[str, Any]) -> Dict[str, Any]:
-    if not task["prompt_chains"]:
-        raise HTTPException(400, "no prompt_chain yet; call /prompt first")
-    pc = task["prompt_chains"][-1]
-    if pc["closed"]:
-        raise HTTPException(400, "current prompt_chain already closed with output; call /prompt to start a new one")
-    return pc
+def _require_task(run, task_id):
+    for t in run["tasks"]:
+        if t["id"] == task_id:
+            return t
+    raise HTTPException(404, "task not found")
 
 def _find_step(task: Dict[str, Any], step_id: str) -> Optional[Dict[str, Any]]:
-    for pc in task["prompt_chains"]:
-        if pc["prompt"] and pc["prompt"]["step_id"] == step_id:
-            return pc["prompt"]
-        for s in pc["thinking"]:
-            if s["step_id"] == step_id:
-                return s
-        for s in pc["tools"]:
-            if s["step_id"] == step_id:
-                return s
-        if pc["output"] and pc["output"]["step_id"] == step_id:
-            return pc["output"]
-    return None
+    return next((s for s in task["steps"] if s["id"] == step_id), None)
 
-def _make_step(step_type: str, ts_ms: Optional[int], data: Dict[str, Any], metrics: Optional[Metrics]) -> Dict[str, Any]:
-    return {
-        "step_id": uuid.uuid4().hex,
-        "type": step_type,
-        "ts_ms": ts_ms or now_ms(),
-        "data": data,
-        "metrics": metrics.model_dump() if metrics else None,
-        "tags": {"replay": 0}
-    }
-
-# ======================================================================================
-# Endpoints
-# ======================================================================================
-@app.get("/health")
-def health():
-    return {"ok": True, "runs": len(DB["runs"])}
-
+# --------------------------------------------------------------------------
+# Create run / task
+# --------------------------------------------------------------------------
 @app.post("/run", response_model=RunOut)
 def create_run():
-    run_id = uuid.uuid4().hex
+    run_id = f"run-{len(DB['runs'])+1}"
     with DB_LOCK:
         DB["runs"][run_id] = {
-            "run_id": run_id,
+            "id": run_id,
             "created_at_ms": now_ms(),
-            "status": "running",
-            "tasks": {},
-            "task_order": []
+            "tasks": []
         }
     return {"run_id": run_id}
 
 @app.post("/task", response_model=TaskOut)
 def create_task(payload: TaskCreate):
     run = _require_run(payload.run_id)
-    task_id = uuid.uuid4().hex
+    task_index = len(run["tasks"])
+    task_id = f"{payload.run_id}-task-{task_index}"
     task_obj = {
-        "task_id": task_id,
-        "name": payload.name or "task",
+        "id": task_id,
+        "name": payload.name or f"task {task_index+1}",
         "created_at_ms": now_ms(),
         "metadata": payload.metadata,
-        "prompt_chains": []   # list of prompt_chains
+        "steps": []
     }
     with DB_LOCK:
-        run["tasks"][task_id] = task_obj
-        run["task_order"].append(task_id)
+        run["tasks"].append(task_obj)
     return {"run_id": payload.run_id, "task_id": task_id}
 
-@app.post("/prompt")
-def add_prompt(p: PromptIn):
+# --------------------------------------------------------------------------
+# Add steps
+# --------------------------------------------------------------------------
+@app.post("/input")
+def add_input(p: InputIn):
     run = _require_run(p.run_id)
     task = _require_task(run, p.task_id)
-    step = _make_step("prompt", p.ts_ms, p.prompt, p.metrics)
-    prompt_chain = {
-        "prompt_chain_id": uuid.uuid4().hex,
-        "prompt": step,
-        "thinking": [],
-        "tools": [],
-        "output": None,
-        "closed": False
-    }
+    step_index = len(task["steps"])
+    step = make_step(p.run_id, task["id"].split("-task-")[1], "input", step_index, p.input, p.metrics.model_dump() if p.metrics else None)
     with DB_LOCK:
-        task["prompt_chains"].append(prompt_chain)
-    return {
-        "ok": True,
-        "run_id": p.run_id,
-        "task_id": p.task_id,
-        "prompt_chain_id": prompt_chain["prompt_chain_id"],
-        "prompt_step_id": step["step_id"]
-    }
+        task["steps"].append(step)
+    return {"ok": True, "step_id": step["id"]}
 
 @app.post("/thinking")
 def add_thinking(t: ThinkingIn):
     run = _require_run(t.run_id)
     task = _require_task(run, t.task_id)
-    pc = _current_prompt_chain(task)
-    step = _make_step("thinking", t.ts_ms, t.thinking, t.metrics)
+    step_index = len(task["steps"])
+    step = make_step(t.run_id, task["id"].split("-task-")[1], "thinking", step_index, t.thinking, t.metrics.model_dump() if t.metrics else None)
     with DB_LOCK:
-        pc["thinking"].append(step)
-    return {
-        "ok": True,
-        "run_id": t.run_id,
-        "task_id": t.task_id,
-        "prompt_chain_id": pc["prompt_chain_id"],
-        "thinking_step_id": step["step_id"]
-    }
+        task["steps"].append(step)
+    return {"ok": True, "step_id": step["id"]}
 
 @app.post("/tool")
 def add_tool(tp: ToolIn):
     run = _require_run(tp.run_id)
     task = _require_task(run, tp.task_id)
-    pc = _current_prompt_chain(task)
-    step = _make_step("tool", tp.ts_ms, tp.tool, tp.metrics)
+    step_index = len(task["steps"])
+    step = make_step(tp.run_id, task["id"].split("-task-")[1], "tool", step_index, tp.tool, tp.metrics.model_dump() if tp.metrics else None)
     with DB_LOCK:
-        pc["tools"].append(step)
-    return {
-        "ok": True,
-        "run_id": tp.run_id,
-        "task_id": tp.task_id,
-        "prompt_chain_id": pc["prompt_chain_id"],
-        "tool_step_id": step["step_id"]
-    }
+        task["steps"].append(step)
+    return {"ok": True, "step_id": step["id"]}
 
 @app.post("/output")
-def set_output(o: OutputIn):
+def add_output(o: OutputIn):
     run = _require_run(o.run_id)
     task = _require_task(run, o.task_id)
-    pc = _current_prompt_chain(task)
-    if pc["output"] is not None:
-        raise HTTPException(400, "this prompt_chain already has output; start a new one with /prompt")
-    step = _make_step("output", o.ts_ms, o.output, o.metrics)
+    step_index = len(task["steps"])
+    step = make_step(o.run_id, task["id"].split("-task-")[1], "output", step_index, o.output, o.metrics.model_dump() if o.metrics else None)
     with DB_LOCK:
-        pc["output"] = step
-        pc["closed"] = True
-    return {
-        "ok": True,
-        "run_id": o.run_id,
-        "task_id": o.task_id,
-        "prompt_chain_id": pc["prompt_chain_id"],
-        "output_step_id": step["step_id"]
-    }
+        task["steps"].append(step)
+    return {"ok": True, "step_id": step["id"]}
 
+# --------------------------------------------------------------------------
+# Replay
+# --------------------------------------------------------------------------
 @app.post("/replay")
 def replay_step(req: ReplayIn):
     run = _require_run(req.run_id)
@@ -252,7 +203,7 @@ def replay_step(req: ReplayIn):
     with DB_LOCK:
         step["tags"]["replay"] = int(step["tags"].get("replay", 0)) + 1
         count = step["tags"]["replay"]
-    recorded = {k: step[k] for k in ("type", "ts_ms", "data", "metrics")}
+    recorded = {k: step[k] for k in ("type", "timestamp", "data", "metrics")}
     patched = {**step["data"], **req.patch} if req.patch else None
     return {
         "run_id": req.run_id,
@@ -263,28 +214,125 @@ def replay_step(req: ReplayIn):
         "patched_preview": patched
     }
 
+# --------------------------------------------------------------------------
+# Compliance
+# --------------------------------------------------------------------------
+@app.post("/compliance/check")
+def compliance_check(payload: ComplianceCheckIn):
+    run = _require_run(payload.run_id)
+    threshold = payload.threshold if payload.threshold is not None else DEFAULT_THRESHOLD
+    tasks = (
+        [t for t in run["tasks"] if t["id"] == payload.task_id]
+        if payload.task_id else run["tasks"]
+    )
+    if not tasks:
+        raise HTTPException(404, "no tasks to check")
+    results = []
+    total = 0
+    violations = 0
+    for task in tasks:
+        texts = gather_task_texts(task)
+        for item in texts:
+            total += 1
+            scored = score_text(item["text"], threshold)
+            if scored["is_violation"]:
+                violations += 1
+            results.append({
+                "run_id": run["id"],
+                "task_id": task["id"],
+                "kind": item["kind"],
+                "step_id": item["step_id"],
+                "ts_ms": item["ts_ms"],
+                "top_label": scored["top_label"],
+                "top_score": scored["top_score"],
+                "is_violation": scored["is_violation"],
+                "violations": scored["violations"],
+                "label_scores": scored["label_scores"],
+                "snippet": item["text"][:200],
+            })
+    ratio = (violations / total) if total else 0.0
+    with DB_LOCK:
+        run.setdefault("compliance", []).append({
+            "ts_ms": now_ms(),
+            "threshold": threshold,
+            "total_checked": total,
+            "violations": violations,
+            "ratio": ratio,
+        })
+    return {"summary": {"total_checked": total, "violations": violations, "ratio": ratio, "threshold": threshold}, "results": results}
+
+@app.get("/compliance/audit/{run_id}.csv")
+def compliance_audit_export(run_id: str, threshold: float = DEFAULT_THRESHOLD, task_id: Optional[str] = None):
+    run = _require_run(run_id)
+    tasks = (
+        [t for t in run["tasks"] if t["id"] == task_id]
+        if task_id else run["tasks"]
+    )
+    rows = []
+    for task in tasks:
+        for item in gather_task_texts(task):
+            scored = score_text(item["text"], threshold)
+            rows.append({
+                "run_id": run_id,
+                "task_id": task["id"],
+                "kind": item["kind"],
+                "step_id": item["step_id"],
+                "ts_ms": item["ts_ms"],
+                "top_label": scored["top_label"],
+                "top_score": f"{scored['top_score']:.4f}",
+                "is_violation": "yes" if scored["is_violation"] else "no",
+                "violations": ";".join(f"{k}:{v:.3f}" for k, v in scored["violations"].items()),
+                "snippet": item["text"][:200].replace("\n", " "),
+            })
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=list(rows[0].keys()) if rows else
+                            ["run_id","task_id","kind","step_id","ts_ms","top_label","top_score","is_violation","violations","snippet"])
+    writer.writeheader()
+    for r in rows:
+        writer.writerow(r)
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="text/csv",
+                             headers={"Content-Disposition": f"attachment; filename='compliance_audit_{run_id}.csv'"})
+
+# --------------------------------------------------------------------------
+# Get runs and run details
+# --------------------------------------------------------------------------
 @app.get("/runs")
 def list_runs():
-    with DB_LOCK:
-        return [
-            {"run_id": r["run_id"], "created_at_ms": r["created_at_ms"], "status": r["status"]}
-            for r in DB["runs"].values()
-        ]
+    return [
+        {
+            "id": run["id"],
+            "created_at": to_iso(run["created_at_ms"]),
+            "tasks_count": len(run.get("tasks", [])),
+        }
+        for run in DB["runs"].values()
+    ]
 
-@app.get("/runs/{run_id}")
+@app.get("/run/{run_id}")
 def get_run(run_id: str):
     run = _require_run(run_id)
     return {
-        "run_id": run["run_id"],
-        "created_at_ms": run["created_at_ms"],
-        "status": run["status"],
-        "task_order": run["task_order"],
-        "tasks": run["tasks"]
+        "id": run["id"],
+        "tasks": [
+            {
+                "id": task["id"],
+                "name": task.get("name", ""),
+                "steps": [
+                    {
+                        "id": step["id"],
+                        "type": step["type"],
+                        "title": step["type"].capitalize() if step["type"] in ("input", "thinking") else None,
+                        "name": step["data"].get("name") if step["type"] == "tool" else None,
+                        "text": step["data"].get("text") if step["type"] in ("input", "thinking") else None,
+                        "input": step["data"].get("input") if step["type"] == "tool" else None,
+                        "output": step["data"].get("output") if step["type"] == "tool" else None,
+                        "attribute": {k: v for k, v in step["data"].items() if k not in ("name", "input", "output")} if step["type"] == "tool" else None,
+                        "duration": step["metrics"].get("exec_time_ms") if step["type"] == "tool" else None,
+                        "timestamp": to_iso(step["timestamp"])
+                    }
+                    for step in task["steps"]
+                ]
+            }
+            for task in run["tasks"]
+        ]
     }
-
-@app.post("/run/{run_id}/end")
-def end_run(run_id: str):
-    run = _require_run(run_id)
-    with DB_LOCK:
-        run["status"] = "ended"
-    return {"ok": True, "run_id": run_id}

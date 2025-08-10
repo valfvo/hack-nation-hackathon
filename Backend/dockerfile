@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /backend
 
-RUN pip install --no-cache-dir fastapi uvicorn pydantic[dotenv]
+RUN pip install --no-cache-dir fastapi uvicorn pydantic[dotenv] transformers torch --extra-index-url https://download.pytorch.org/whl/cpu
 
 COPY . /backend/
 

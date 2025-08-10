@@ -1,0 +1,180 @@
+{
+  "run-1": {
+    "id": "run-1",
+    "created_at_ms": 1754809200000,
+    "tasks": [
+      {
+        "id": "run-1-task-0",
+        "name": "Scenario 1 - Rejection",
+        "steps": [
+          {
+            "id": "run-1-t0-tool-0",
+            "type": "tool",
+            "name": "extract_text_from_pdf",
+            "created_at": "2025-08-10T07:00:00Z",
+            "duration": 1.5,
+            "metrics": { "exec_time_ms": 1500, "model_latency_ms": 50 },
+            "input": { "pdf_path": "android-developer-1559034496.pdf" },
+            "output": { "raw_text": "Extracted resume text..." }
+          },
+          {
+            "id": "run-1-t0-thinking-0",
+            "type": "thinking",
+            "name": "Reason about skill extraction",
+            "created_at": "2025-08-10T07:00:01Z",
+            "duration": 0.5,
+            "metrics": { "exec_time_ms": 500, "model_latency_ms": 10 },
+            "text": "Checking if Machine Learning skill is present in extracted text."
+          },
+          {
+            "id": "run-1-t0-tool-1",
+            "type": "tool",
+            "name": "parse_resume_details_with_validation",
+            "created_at": "2025-08-10T07:00:02Z",
+            "duration": 2.1,
+            "metrics": { "exec_time_ms": 2100, "model_latency_ms": 80 },
+            "input": {
+              "raw_text": "Extracted resume text...",
+              "required_skill": "Machine Learning"
+            },
+            "output": {
+              "parsed_details": { "name": "John Doe", "email": "john@example.com" },
+              "error": "Required skill not found"
+            }
+          },
+          {
+            "id": "run-1-t0-thinking-1",
+            "type": "thinking",
+            "name": "Decision reasoning",
+            "created_at": "2025-08-10T07:00:04Z",
+            "duration": 0.4,
+            "metrics": { "exec_time_ms": 400, "model_latency_ms": 12 },
+            "text": "Since the required skill is missing, next step is rejection."
+          },
+          {
+            "id": "run-1-t0-tool-2",
+            "type": "tool",
+            "name": "decide_after_parsing",
+            "created_at": "2025-08-10T07:00:05Z",
+            "duration": 0.8,
+            "metrics": { "exec_time_ms": 800, "model_latency_ms": 20 },
+            "input": { "error": "Required skill not found" },
+            "output": { "decision": "send_rejection" }
+          },
+          {
+            "id": "run-1-t0-tool-3",
+            "type": "tool",
+            "name": "send_rejection_email",
+            "created_at": "2025-08-10T07:00:07Z",
+            "duration": 1.2,
+            "metrics": { "exec_time_ms": 1200, "model_latency_ms": 30 },
+            "input": {
+              "parsed_details": { "name": "John Doe", "email": "john@example.com" },
+              "required_skill": "Machine Learning"
+            },
+            "output": {
+              "rejection_email_content": "Dear John Doe, thank you for applying..."
+            }
+          }
+        ]
+      },
+      {
+        "id": "run-1-task-1",
+        "name": "Scenario 2 - Success",
+        "steps": [
+          {
+            "id": "run-1-t1-tool-0",
+            "type": "tool",
+            "name": "extract_text_from_pdf",
+            "created_at": "2025-08-10T08:00:00Z",
+            "duration": 1.3,
+            "metrics": { "exec_time_ms": 1300, "model_latency_ms": 45 },
+            "input": { "pdf_path": "android-developer-1559034496.pdf" },
+            "output": { "raw_text": "Extracted resume text..." }
+          },
+          {
+            "id": "run-1-t1-thinking-0",
+            "type": "thinking",
+            "name": "Reason about parsing",
+            "created_at": "2025-08-10T08:00:01Z",
+            "duration": 0.6,
+            "metrics": { "exec_time_ms": 600, "model_latency_ms": 15 },
+            "text": "Since required skill is None, we proceed with parsing without validation."
+          },
+          {
+            "id": "run-1-t1-tool-1",
+            "type": "tool",
+            "name": "parse_resume_details_with_validation",
+            "created_at": "2025-08-10T08:00:02Z",
+            "duration": 1.9,
+            "metrics": { "exec_time_ms": 1900, "model_latency_ms": 75 },
+            "input": {
+              "raw_text": "Extracted resume text...",
+              "required_skill": null
+            },
+            "output": {
+              "parsed_details": { "name": "Jane Doe", "email": "jane@example.com" },
+              "error": null
+            }
+          },
+          {
+            "id": "run-1-t1-thinking-1",
+            "type": "thinking",
+            "name": "Decision reasoning",
+            "created_at": "2025-08-10T08:00:03Z",
+            "duration": 0.5,
+            "metrics": { "exec_time_ms": 500, "model_latency_ms": 18 },
+            "text": "No error found, continue to summary creation."
+          },
+          {
+            "id": "run-1-t1-tool-2",
+            "type": "tool",
+            "name": "decide_after_parsing",
+            "created_at": "2025-08-10T08:00:04Z",
+            "duration": 0.6,
+            "metrics": { "exec_time_ms": 600, "model_latency_ms": 22 },
+            "input": { "error": null },
+            "output": { "decision": "continue_to_summary" }
+          },
+          {
+            "id": "run-1-t1-tool-3",
+            "type": "tool",
+            "name": "create_concise_summary",
+            "created_at": "2025-08-10T08:00:06Z",
+            "duration": 2.5,
+            "metrics": { "exec_time_ms": 2500, "model_latency_ms": 90 },
+            "input": {
+              "raw_text": "Extracted resume text...",
+              "parsed_details": { "name": "Jane Doe", "email": "jane@example.com" }
+            },
+            "output": {
+              "concise_summary": "Jane Doe is a skilled Android developer..."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "run-2": {
+    "id": "run-2",
+    "created_at_ms": 1754812800000,
+    "tasks": [
+      {
+        "id": "run-2-task-0",
+        "name": "Mock Task Run 2",
+        "steps": []
+      }
+    ]
+  },
+  "run-3": {
+    "id": "run-3",
+    "created_at_ms": 1754816400000,
+    "tasks": [
+      {
+        "id": "run-3-task-0",
+        "name": "Mock Task Run 3",
+        "steps": []
+      }
+    ]
+  }
+}
