@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from pydantic.v1 import BaseModel, Field
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, END, START
 
 load_dotenv()
 
@@ -21,41 +21,32 @@ os.environ["OPENAI_API_KEY"] = api_key
 # ==============================================================================
 
 
-# Granular data structures for parsing
 class Education(BaseModel):
-    degree: Optional[str] = Field(
-        description="The name of the degree, e.g., Master in Computer Science"
-    )
-    school: Optional[str] = Field(description="The name of the school or university")
+    degree: Optional[str] = Field(description="The name of the degree")
+    school: Optional[str] = Field(description="The name of the school")
     year: Optional[str] = Field(description="The year of graduation")
 
 
 class Experience(BaseModel):
-    role: Optional[str] = Field(description="The job title, e.g., Web Developer")
+    role: Optional[str] = Field(description="The job title")
     company: Optional[str] = Field(description="The name of the company")
-    duration: Optional[str] = Field(
-        description="The dates or duration of the experience"
-    )
-    description: Optional[str] = Field(
-        description="A brief summary of tasks and responsibilities"
-    )
+    duration: Optional[str] = Field(description="The dates of the experience")
+    description: Optional[str] = Field(description="A summary of responsibilities")
 
 
-# Structure for parsing only (our first intelligent tool's output)
 class ParsedDetails(BaseModel):
     """Structure for the factual information extracted from a resume."""
 
     full_name: Optional[str] = Field(description="The full name of the candidate")
-    email: Optional[str] = Field(description="The email address of the candidate")
-    phone_number: Optional[str] = Field(description="The phone number of the candidate")
-    skills: List[str] = Field(description="A list of technical or language skills")
+    email: Optional[str] = Field(description="The email address")
+    phone_number: Optional[str] = Field(description="The phone number")
+    skills: List[str] = Field(description="A list of technical skills")
     education: List[Education] = Field(description="A list of academic backgrounds")
     work_experience: List[Experience] = Field(
         description="A list of professional experiences"
     )
 
 
-# Granular graph state to track each step
 class GraphState(BaseModel):
     """The state that flows through our modular graph."""
 
@@ -64,15 +55,16 @@ class GraphState(BaseModel):
     parsed_details: Optional[ParsedDetails] = None
     concise_summary: Optional[str] = None
     error: Optional[str] = None
+    # Parameter that can be changed by the user to make the tool succeed/fail
+    required_skill: Optional[str] = None
 
 
 # ==============================================================================
-# SECTION 2: PLACEHOLDER FUNCTIONS (UNCHANGED)
+# SECTION 2: PLACEHOLDER FUNCTIONS
 # ==============================================================================
 
 
 def log_event(event_type: str, data: dict):
-    """Placeholder for Jules's logger/wrapper."""
     from datetime import datetime
 
     timestamp = datetime.now().isoformat()
@@ -85,7 +77,9 @@ def log_event(event_type: str, data: dict):
 
 
 def extract_text_from_pdf(state: GraphState) -> GraphState:
-    """Node 1: Opens the PDF and extracts its raw text."""
+    """Tool: Extracts text. Skips if text is already present (for reruns)."""
+    if state.raw_text:
+        return state
     log_event(
         "TOOL_EXECUTE", {"name": "extract_text_from_pdf", "input": state.pdf_path}
     )
@@ -100,56 +94,57 @@ def extract_text_from_pdf(state: GraphState) -> GraphState:
     return state
 
 
-def parse_resume_details(state: GraphState) -> GraphState:
-    """Node 2 (Tool 1): Parses the structured details from the resume."""
+def parse_resume_details_with_validation(state: GraphState) -> GraphState:
+    """Tool: Parses details and performs a validation check."""
     if state.error or not state.raw_text:
         return state
-
     log_event(
-        "TOOL_EXECUTE", {"name": "parse_resume_details", "input": "Raw resume text"}
+        "TOOL_EXECUTE",
+        {"name": "parse_resume_details_with_validation", "input": "Raw resume text"},
     )
     try:
         llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
         structured_llm = llm.with_structured_output(ParsedDetails)
-        prompt = f"Analyze the following resume text and extract the information in a structured way. Do not summarize, just parse the requested fields.\n\nText:\n{state.raw_text}"
+        prompt = f"Analyze the following resume text and extract the information in a structured way.\n\nText:\n{state.raw_text}"
         response = structured_llm.invoke(prompt)
         state.parsed_details = response
+
+        # --- VALIDATION LOGIC ---
+        if state.required_skill:
+            log_event(
+                "VALIDATION",
+                {"message": f"Checking for required skill: '{state.required_skill}'"},
+            )
+            parsed_skills_lower = [
+                skill.lower() for skill in state.parsed_details.skills
+            ]
+            if state.required_skill.lower() not in parsed_skills_lower:
+                # Generating the controlled error
+                error_message = f"Validation Failed: The required skill '{state.required_skill}' was not found in the resume."
+                state.error = error_message
+                log_event(
+                    "TOOL_FAILURE",
+                    {
+                        "name": "parse_resume_details_with_validation",
+                        "reason": error_message,
+                    },
+                )
+                return state
     except Exception as e:
-        state.error = f"Error during details parsing: {e}"
+        state.error = f"Technical Error during details parsing: {e}"
     return state
 
 
 def create_concise_summary(state: GraphState) -> GraphState:
-    """Node 3 (Tool 2): Creates a summary based on the text and parsed details."""
-    if state.error or not state.raw_text:
-        return state
-
+    """Tool: Creates a summary. Only runs if parsing was successful."""
     log_event(
         "TOOL_EXECUTE",
         {"name": "summarize_profile", "input": "Raw text and parsed details"},
     )
     try:
         llm = ChatOpenAI(temperature=0.2, model_name="gpt-4o-mini")
-
-        # We provide the already-parsed details as context for a better summary!
-        parsing_context = (
-            state.parsed_details.json(indent=2)
-            if state.parsed_details
-            else "Not available"
-        )
-
-        prompt = f"""
-        Based on the full resume text and the structured details extracted below, write a very concise and impactful 2-3 sentence summary.
-        This summary should capture the essence of the candidate's profile for a busy recruiter.
-
-        Structured details already extracted:
-        {parsing_context}
-
-        Full resume text:
-        {state.raw_text}
-
-        Write the summary here:
-        """
+        parsing_context = state.parsed_details.json(indent=2)
+        prompt = f"Based on the resume text and structured details, write a concise 2-3 sentence summary.\nDetails: {parsing_context}\nText: {state.raw_text}\nSummary:"
         response = llm.invoke(prompt)
         state.concise_summary = response.content
     except Exception as e:
@@ -158,95 +153,106 @@ def create_concise_summary(state: GraphState) -> GraphState:
 
 
 # ==============================================================================
-# SECTION 4: BUILDING THE NEW GRANULAR GRAPH
+# SECTION 4: BUILDING THE GRAPH WITH CONDITIONAL LOGIC
 # ==============================================================================
 
 
-def build_graph():
+# Decision node
+def decide_after_parsing(state: GraphState) -> str:
+    """Decides the next step after parsing based on the presence of an error."""
+    if state.error:
+        log_event("ROUTING", {"decision": "Error detected. Ending process."})
+        return "end_process"
+    else:
+        log_event("ROUTING", {"decision": "No error. Proceeding to summary."})
+        return "continue_to_summary"
+
+
+def build_graph_with_replay_logic():
     workflow = StateGraph(GraphState)
-
-    # Add our more granular nodes/tools
     workflow.add_node("extract_text", extract_text_from_pdf)
-    workflow.add_node("parse_details", parse_resume_details)
+    workflow.add_node("parse_and_validate", parse_resume_details_with_validation)
     workflow.add_node("create_summary", create_concise_summary)
+    workflow.add_edge(START, "extract_text")
+    workflow.add_edge("extract_text", "parse_and_validate")
 
-    # Define the new execution chain
-    workflow.set_entry_point("extract_text")
-    workflow.add_edge("extract_text", "parse_details")
-    workflow.add_edge("parse_details", "create_summary")
+    workflow.add_conditional_edges(
+        "parse_and_validate",  # The node from which the decision is made
+        decide_after_parsing,  # The function that makes the decision
+        {
+            # "decision_name": "next_node_name"
+            "continue_to_summary": "create_summary",
+            "end_process": END,
+        },
+    )
     workflow.add_edge("create_summary", END)
 
     return workflow.compile()
 
 
 # ==============================================================================
-# SECTION 5: MAIN EXECUTION WITH JSON OUTPUT
+# SECTION 5: MAIN EXECUTION DEMONSTRATING THE FAIL & REPLAY SCENARIO
 # ==============================================================================
 
 
 def main():
-    resume_folder = "resume/"
-    if not os.path.exists(resume_folder):
+    pdf_file = "android-developer-1559034496.pdf"  # Make sure this file is in resume/
+    pdf_path = os.path.join("resume/", pdf_file)
+
+    app = build_graph_with_replay_logic()
+
+    # --- STEP 1: Initial run that is designed to FAIL ---
+    print("--- 🚀 Initial Run: Testing validation failure ---")
+    initial_state_to_fail = {"pdf_path": pdf_path, "required_skill": "Machine Learning"}
+    log_event("TASK_START", {"cv": pdf_file, "params": initial_state_to_fail})
+
+    failed_state = app.invoke(initial_state_to_fail)
+
+    if failed_state.get("error"):
+        print(f"\n❌ RUN FAILED! The UI would display this error for replay:")
+        print(f"   Error: {failed_state['error']}")
+    else:
         print(
-            f"The '{resume_folder}' directory does not exist. Please create it and place PDF resumes inside."
+            "✅ The run succeeded unexpectedly. Try with a different 'required_skill'."
         )
         return
 
-    pdf_files = [f for f in os.listdir(resume_folder) if f.endswith(".pdf")]
-    if not pdf_files:
-        print(f"No PDF files found in the '{resume_folder}' directory.")
-        return
+    # --- STEP 2: REPLAY - The user changes the parameter ---
+    print("\n--- 🔄 Replay Scenario: The user corrects the parameter ---")
+    print("   The user sees the error and decides to no longer require the skill.")
 
-    app = build_graph()
-    all_results = []
-    print(f"Starting granular processing of {len(pdf_files)} resume(s)...")
+    # Prepare for replay. We start from the failed state
+    state_for_replay = failed_state.copy()
 
-    for pdf_file in pdf_files:
-        pdf_path = os.path.join(resume_folder, pdf_file)
-        print(f"\n--- Processing: {pdf_file} ---")
-        log_event("TASK_START", {"cv": pdf_file})
+    # The user changes the parameter via the UI
+    state_for_replay["required_skill"] = None  # We remove the requirement
 
-        final_state = app.invoke({"pdf_path": pdf_path})
+    # And we must reset the error so the graph re-evaluates the node.
+    state_for_replay["error"] = None
+    log_event("REPLAY_START", {"cv": pdf_file, "new_params": {"required_skill": None}})
 
-        if final_state.get("error"):
-            print(f"Error during processing: {final_state['error']}")
-            log_event(
-                "TASK_END",
-                {"status": "ERROR", "cv": pdf_file, "error": final_state["error"]},
-            )
-        else:
-            # We recombine the results from the different tools for the final output
-            details = final_state.get("parsed_details")
-            summary = final_state.get("concise_summary")
+    # We re-invoke the graph with the corrected state.
+    successful_state = app.invoke(state_for_replay)
 
-            if details:
-                # Convert the Pydantic object to a dictionary
-                final_record = details.dict()
-                # Add the summary to the dictionary
-                final_record["concise_summary"] = summary
-                all_results.append(final_record)
-                log_event("TASK_END", {"status": "SUCCESS", "cv": pdf_file})
-            else:
-                log_event(
-                    "TASK_END",
-                    {
-                        "status": "WARNING",
-                        "cv": pdf_file,
-                        "message": "No details could be parsed.",
-                    },
-                )
+    if successful_state.get("error"):
+        print(f"\n❌ REPLAY FAILED! Error: {successful_state['error']}")
+    else:
+        print("\n✅ REPLAY SUCCEEDED!")
+        print("   The tool worked and the graph continued to the end.")
 
-    if all_results:
-        output_filename = "summarized_resume.json"
-        print(f"\n\n--- COMPILATION COMPLETE ---")
+        # Assemble the final result
+        final_result = successful_state["parsed_details"].dict()
+        final_result["concise_summary"] = successful_state["concise_summary"]
 
-        # Write the final JSON file
+        print("\n--- Final Result ---")
+        print(json.dumps(final_result, indent=2))
+
+        # --- Save the successful result to a JSON file ---
+        output_filename = "result.json"
         with open(output_filename, "w", encoding="utf-8") as f:
-            json.dump(all_results, f, ensure_ascii=False, indent=4)
+            json.dump(final_result, f, ensure_ascii=False, indent=4)
 
-        print(
-            f"All resumes have been processed and the results are saved in '{output_filename}'"
-        )
+        print(f"\n✅ Final result saved to '{output_filename}'")
 
 
 if __name__ == "__main__":
