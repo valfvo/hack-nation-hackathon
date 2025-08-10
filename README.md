@@ -152,12 +152,13 @@ Our system is designed to meet the hackathon evaluation criteria:
 
 ## Dependencies & Environment Files
 
-### Backend Dependencies (Pixi)
+### Backend Dependencies
 - **FastAPI**: Web framework for building APIs
 - **Uvicorn**: ASGI server for running FastAPI applications
 - **Pydantic**: Data validation using Python type annotations
 - **Transformers**: Hugging Face transformers library for ML models
 - **PyTorch**: Deep learning framework
+- **Pixi**: Dependency management for Python
 
 ### Logger Service Dependencies
 - **FastAPI**: Web framework
