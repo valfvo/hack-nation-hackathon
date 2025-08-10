@@ -8,7 +8,7 @@ import operator
 
 from pydantic.v1 import BaseModel, Field
 
-# NOUVEAUX IMPORTS POUR L'AGENT
+# Imports for the agent architecture
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
@@ -22,7 +22,8 @@ if not api_key:
 os.environ["OPENAI_API_KEY"] = api_key
 
 # ==============================================================================
-# SECTION 1: TRANSFORMER LES FONCTIONS EN OUTILS DÉCOUVERABLES
+# SECTION 1: TRANSFORMING FUNCTIONS INTO DISCOVERABLE TOOLS
+# Docstrings are CRUCIAL here: the agent reads them to know which tool to use.
 # ==============================================================================
 
 
@@ -56,22 +57,14 @@ def parse_resume_details(resume_text: str) -> ParsedDetails:
     return structured_llm.invoke(prompt)
 
 
-# === CORRECTION ICI ===
 @tool
 def create_summary(resume_text: str) -> str:
-    """
-    Creates a concise 2-3 sentence summary of a candidate's profile based on their full resume text.
-    This tool should be used after the resume text has been extracted.
-    """
+    """Creates a concise 2-3 sentence summary of a candidate's profile based on their full resume text."""
     print(f"--- TOOL: create_summary ---")
     llm = ChatOpenAI(temperature=0.2, model_name="gpt-4o-mini")
-    # Le prompt demande maintenant au LLM de faire le travail complet de lecture et de résumé
     prompt = f"Based on the following full resume text, write a concise and impactful 2-3 sentence summary for a recruiter.\n\nText:\n{resume_text}\n\nSummary:"
     response = llm.invoke(prompt)
     return response.content
-
-
-# === FIN DE LA CORRECTION ===
 
 
 @tool
@@ -81,40 +74,63 @@ def send_rejection_email(
     """Sends a templated rejection email to a candidate when they are missing a specific required skill."""
     print(f"--- TOOL: send_rejection_email, RECIPIENT: {candidate_email} ---")
     email_subject = "Update on your application with Yubu.ai Inc."
-    email_body = f"Dear {candidate_name},\n\nThank you for your interest... particularly regarding experience with '{required_skill}'.\n\nSincerely,\nThe Yubu.ai Inc."
+    email_body = f"""Dear {candidate_name},
 
-    print("\n--- 📧 SIMULATING EMAIL SEND ---")
-    print(f"To: {candidate_email}\nSubject: {email_subject}\n---\n{email_body}\n---")
+Thank you for your interest in a position at Yubu.ai Inc. and for taking the time to submit your application.
 
+We received a high volume of qualified applicants. After careful review, we found that while your background is impressive, it does not fully align with the specific requirements for this role, particularly regarding experience with '{required_skill}'.
+
+We will keep your resume on file for any future openings that may be a better match for your skills and experience.
+
+We wish you the best of luck in your job search.
+
+Sincerely,
+The Yubu.ai Inc."""
+    print(
+        f"\n--- 📧 SIMULATING EMAIL SEND ---\nTo: {candidate_email}\nSubject: {email_subject}\n---\n{email_body}\n---"
+    )
     return f"Rejection email successfully sent to {candidate_email}."
 
 
-# ... le reste du code (sections 2, 3) est identique ...
+# === NEW TOOL HERE ===
+@tool
+def save_candidate_profile_as_json(
+    filename: str, parsed_details: dict, summary: str
+) -> str:
+    """Saves the candidate's final profile, including parsed details and the summary, to a JSON file."""
+    print(f"--- TOOL: save_candidate_profile_as_json, FILENAME: {filename} ---")
+    try:
+        final_profile = parsed_details
+        final_profile["summary"] = summary
+
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(final_profile, f, ensure_ascii=False, indent=4)
+
+        return f"Successfully saved the complete profile to '{filename}'."
+    except Exception as e:
+        return f"Error while saving the JSON file: {e}"
+
 
 # ==============================================================================
-# SECTION 2: DÉFINIR L'ÉTAT ET LE GRAPHE DE L'AGENT
+# SECTION 2: DEFINING THE AGENT STATE AND GRAPH
 # ==============================================================================
 
 
-# L'état de l'agent est simplement la liste des messages échangés.
 class AgentState(TypedDict):
+    # The list of messages serves as the memory of the agent
     messages: Annotated[list, operator.add]
 
 
-# Le "cerveau" de l'agent
-def agent_node(state: AgentState, llm, tools):
-    """Ce noeud décide de l'action à prendre (appeler un outil ou répondre à l'utilisateur)."""
+def agent_node(state: AgentState, llm):
+    """This node is the "brain" of the agent. It decides which action to take."""
     print("--- AGENT: Thinking... ---")
     result = llm.invoke(state["messages"])
     return {"messages": [result]}
 
 
-# La logique pour décider si on continue la boucle ou si on s'arrête
 def should_continue(state: AgentState):
-    """Décide si l'on continue à appeler des outils ou si l'agent a fini."""
-    last_message = state["messages"][-1]
-    # Si le dernier message n'a pas d'appel d'outil, le travail est terminé.
-    if not last_message.tool_calls:
+    """This function decides whether to continue calling tools or if the agent is finished."""
+    if not state["messages"][-1].tool_calls:
         print("--- AGENT: Work finished. ---")
         return "end"
     else:
@@ -123,70 +139,71 @@ def should_continue(state: AgentState):
 
 
 def build_react_agent_graph():
-    # 1. Définir les outils et le LLM
+    # Define the list of tools the agent can choose from
     tools = [
         extract_text_from_pdf,
         parse_resume_details,
         create_summary,
         send_rejection_email,
+        save_candidate_profile_as_json,
     ]
     llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini").bind_tools(tools)
 
-    # 2. Définir les noeuds du graphe
-    # Le noeud "agent" qui appelle le LLM pour décider
-    bound_agent_node = lambda state: agent_node(state, llm, tools)
-    # Le noeud "action" qui exécute l'outil choisi par l'agent
+    # Define the nodes of the graph
+    bound_agent_node = lambda state: agent_node(state, llm)
     tool_node = ToolNode(tools)
 
-    # 3. Construire le graphe
+    # Build the graph structure
     workflow = StateGraph(AgentState)
     workflow.add_node("agent", bound_agent_node)
     workflow.add_node("action", tool_node)
 
     workflow.set_entry_point("agent")
 
+    # Define the conditional logic for the agent loop
     workflow.add_conditional_edges(
-        "agent",  # Le noeud de départ de la décision
-        should_continue,  # La fonction qui décide
-        {
-            "continue": "action",  # Si on continue, on exécute l'outil
-            "end": END,  # Si on a fini, on arrête
-        },
+        "agent", should_continue, {"continue": "action", "end": END}
     )
-    # Après avoir exécuté un outil, on retourne toujours à l'agent pour qu'il réfléchisse à la suite
+
+    # After a tool is executed, the flow always goes back to the agent to decide the next step
     workflow.add_edge("action", "agent")
 
     return workflow.compile()
 
 
 # ==============================================================================
-# SECTION 3: EXÉCUTER L'AGENT REACT
+# SECTION 3: EXECUTING THE REACT AGENT
 # ==============================================================================
 
 
 def main():
     app = build_react_agent_graph()
 
-    # --- SCÉNARIO 1 : Le candidat NE CORRESPOND PAS ---
+    # --- SCENARIO 1: Unchanged ---
     print("\n\n--- 🚀 SCENARIO 1: Candidate does NOT match ---")
     task1 = "Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill for this job is 'Machine Learning'. If the candidate has this skill, provide a summary. If not, send them a rejection email."
-
-    # On lance la tâche comme une conversation
     initial_messages = [HumanMessage(content=task1)]
     result1 = app.invoke({"messages": initial_messages})
-
     print("\n--- AGENT FINAL RESPONSE (Scenario 1) ---")
     print(result1["messages"][-1].content)
 
-    # --- SCÉNARIO 2 : Le candidat CORRESPOND ---
-    print("\n\n--- 🚀 SCENARIO 2: Candidate MATCHES ---")
-    task2 = "Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill is 'Java'. If the candidate has this skill, provide a summary. If not, send them a rejection email."
-
+    # --- SCENARIO 2: Task modified to include saving the result ---
+    print("\n\n--- 🚀 SCENARIO 2: Candidate MATCHES and profile is saved ---")
+    task2 = """
+    Analyze the resume at 'resume/android-developer-1559034496.pdf'. The required skill is 'Java'. 
+    If the candidate has this skill, first create a summary. 
+    Then, using the parsed details and the new summary, save the complete profile to a JSON file named 'successful_candidate_profile.json'.
+    """
     initial_messages = [HumanMessage(content=task2)]
     result2 = app.invoke({"messages": initial_messages})
-
     print("\n--- AGENT FINAL RESPONSE (Scenario 2) ---")
     print(result2["messages"][-1].content)
+
+    # Verify that the file was created
+    if os.path.exists("successful_candidate_profile.json"):
+        print(
+            "\n✅ Verification: 'successful_candidate_profile.json' was successfully created."
+        )
 
 
 if __name__ == "__main__":
