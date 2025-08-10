@@ -162,10 +162,10 @@ def send_rejection_email(state: GraphState) -> GraphState:
         "TOOL_EXECUTE", {"name": "send_rejection_email", "recipient": candidate_email}
     )
 
-    email_subject = "Update on your application with AgentOps Inc."
+    email_subject = "Update on your application with Yubu.ai Inc."
     email_body = f"""Dear {candidate_name},
 
-Thank you for your interest in a position at AgentOps Inc. and for taking the time to submit your application.
+Thank you for your interest in a position at Yubu.ai Inc. and for taking the time to submit your application.
 
 We received a high volume of qualified applicants. After careful review, we found that while your background is impressive, it does not fully align with the specific requirements for this role, particularly regarding experience with '{required_skill}'.
 
@@ -174,7 +174,7 @@ We will keep your resume on file for any future openings that may be a better ma
 We wish you the best of luck in your job search.
 
 Sincerely,
-The AgentOps Inc."""
+The Yubu.ai Inc."""
 
     print("\n--- 📧 SIMULATING EMAIL SEND ---")
     print(f"To: {candidate_email}\nSubject: {email_subject}\n---\n{email_body}\n---")
