@@ -33,8 +33,7 @@ states = list(agent.get_state_history(config))
 for state in states:
     print(state.next)
     print(state.config["configurable"]["checkpoint_id"])
-
-    print()
+    print(state.values)
 
 
 
