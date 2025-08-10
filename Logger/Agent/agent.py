@@ -14,6 +14,11 @@ from langgraph.prebuilt import ToolNode
 from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
 from langchain_core.tools import tool
 
+# Import memory saver for the agent
+from langgraph.checkpoint.memory import InMemorySaver
+
+from wrapper import LoggingAgentWrapper
+
 load_dotenv()
 
 api_key = os.getenv("OPENAI_API_KEY")
@@ -168,7 +173,8 @@ def build_react_agent_graph():
     # After a tool is executed, the flow always goes back to the agent to decide the next step
     workflow.add_edge("action", "agent")
 
-    return workflow.compile()
+    checkpointer = InMemorySaver()
+    return workflow.compile(checkpointer=checkpointer)
 
 
 # ==============================================================================
@@ -178,6 +184,7 @@ def build_react_agent_graph():
 
 def main():
     app = build_react_agent_graph()
+    app = LoggingAgentWrapper(app)
 
     # --- SCENARIO 1: Unchanged ---
     print("\n\n--- 🚀 SCENARIO 1: Candidate does NOT match ---")
