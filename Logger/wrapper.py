@@ -98,7 +98,7 @@ class LoggingAgentWrapper:
                 # "values": values
             }
             print(f"[LOG] State: {dict_state}")
-            print("f[LOG] TRUE STATE: ", state)
+            #print("f[LOG] TRUE STATE: ", state)
             self.upload_step(dict_state)
             # print(f"[LOG] State: {dict_state}")
             # if "parsed_details" in values:

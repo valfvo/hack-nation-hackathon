@@ -50,20 +50,16 @@ class ParsedDetails(BaseModel):
 def parse_resume_details(resume_text: str) -> ParsedDetails:
     """Parses raw text from a resume to extract structured details like name, email, and skills."""
     print(f"--- TOOL: parse_resume_details ---")
-    llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
-    structured_llm = llm.with_structured_output(ParsedDetails)
     prompt = f"Analyze the following resume text and extract the key information.\n\nText:\n{resume_text}"
-    return structured_llm.invoke(prompt)
+    return prompt
 
 
 @tool
 def create_summary(resume_text: str) -> str:
     """Creates a concise 2-3 sentence summary of a candidate's profile."""
     print(f"--- TOOL: create_summary ---")
-    llm = ChatOpenAI(temperature=0.2, model_name="gpt-4o-mini")
     prompt = f"Based on the following full resume text, write a concise and impactful 2-3 sentence summary for a recruiter.\n\nText:\n{resume_text}\n\nSummary:"
-    response = llm.invoke(prompt)
-    return response.content
+    return prompt
 
 
 @tool
