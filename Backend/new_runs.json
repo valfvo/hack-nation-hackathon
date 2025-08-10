@@ -1,0 +1,288 @@
+{
+  "run-1": {
+    "id": "run-1",
+    "created_at": "2025-08-10T09:00:00Z",
+    "tasks": [
+      {
+        "id": "run-1-task-0",
+        "name": "Scenario 1 - Rejection",
+        "created_at": "2025-08-10T09:01:00Z",
+        "metadata": {},
+        "steps": [
+          {
+            "id": "step-1",
+            "type": "human",
+            "name": null,
+            "created_at": "2025-08-10T09:01:05Z",
+            "duration": 0,
+            "content": "pdf_path = \"android-developer-1559034496.pdf\", required_skills = \"Machine Learning\"",
+            "input": null,
+            "output": null,
+            "tool_calls": [],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-2",
+            "type": "thinking",
+            "name": null,
+            "created_at": "2025-08-10T09:01:10Z",
+            "duration": 1.2,
+            "content": "Extracting text from PDF...",
+            "input": null,
+            "output": null,
+            "tool_calls": [],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-3",
+            "type": "tool",
+            "name": "extract_text_from_pdf",
+            "created_at": "2025-08-10T09:01:12Z",
+            "duration": 0.5,
+            "content": "raw_text content here...",
+            "input": { "pdf_path": "android-developer-1559034496.pdf" },
+            "output": "raw_text content here...",
+            "tool_calls": [
+              {
+                "name": "extract_text_from_pdf",
+                "args": { "pdf_path": "android-developer-1559034496.pdf" },
+                "id": "call_extract_pdf",
+                "type": "tool_call"
+              }
+            ],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-4",
+            "type": "thinking",
+            "name": null,
+            "created_at": "2025-08-10T09:01:14Z",
+            "duration": 1.5,
+            "content": "Parsing resume and checking for required skill...",
+            "input": null,
+            "output": null,
+            "tool_calls": [],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-5",
+            "type": "tool",
+            "name": "parse_resume_details_with_validation",
+            "created_at": "2025-08-10T09:01:16Z",
+            "duration": 0.6,
+            "content": "{\"error\": \"Required skill Machine Learning not found\"}",
+            "input": { "raw_text": "raw_text content here...", "required_skill": "Machine Learning" },
+            "output": { "error": "Required skill Machine Learning not found" },
+            "tool_calls": [
+              {
+                "name": "parse_resume_details_with_validation",
+                "args": { "raw_text": "raw_text content here...", "required_skill": "Machine Learning" },
+                "id": "call_parse_resume",
+                "type": "tool_call"
+              }
+            ],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-6",
+            "type": "thinking",
+            "name": null,
+            "created_at": "2025-08-10T09:01:18Z",
+            "duration": 0.8,
+            "content": "Decision: send_rejection",
+            "input": null,
+            "output": null,
+            "tool_calls": [],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-7",
+            "type": "tool",
+            "name": "send_rejection_email",
+            "created_at": "2025-08-10T09:01:20Z",
+            "duration": 0.7,
+            "content": "Email to candidate: Sorry, you do not meet the requirements.",
+            "input": { "parsed_details": {}, "required_skill": "Machine Learning" },
+            "output": "Email to candidate: Sorry, you do not meet the requirements.",
+            "tool_calls": [
+              {
+                "name": "send_rejection_email",
+                "args": { "parsed_details": {}, "required_skill": "Machine Learning" },
+                "id": "call_send_rejection",
+                "type": "tool_call"
+              }
+            ],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          }
+        ]
+      },
+      {
+        "id": "run-1-task-1",
+        "name": "Scenario 2 - Success",
+        "created_at": "2025-08-10T09:02:00Z",
+        "metadata": {},
+        "steps": [
+          {
+            "id": "step-1",
+            "type": "human",
+            "name": null,
+            "created_at": "2025-08-10T09:02:05Z",
+            "duration": 0,
+            "content": "pdf_path = \"android-developer-1559034496.pdf\", required_skills = None",
+            "input": null,
+            "output": null,
+            "tool_calls": [],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-2",
+            "type": "thinking",
+            "name": null,
+            "created_at": "2025-08-10T09:02:10Z",
+            "duration": 1.2,
+            "content": "Extracting text from PDF...",
+            "input": null,
+            "output": null,
+            "tool_calls": [],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-3",
+            "type": "tool",
+            "name": "extract_text_from_pdf",
+            "created_at": "2025-08-10T09:02:12Z",
+            "duration": 0.5,
+            "content": "raw_text content here...",
+            "input": { "pdf_path": "android-developer-1559034496.pdf" },
+            "output": "raw_text content here...",
+            "tool_calls": [
+              {
+                "name": "extract_text_from_pdf",
+                "args": { "pdf_path": "android-developer-1559034496.pdf" },
+                "id": "call_extract_pdf",
+                "type": "tool_call"
+              }
+            ],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-4",
+            "type": "thinking",
+            "name": null,
+            "created_at": "2025-08-10T09:02:14Z",
+            "duration": 1.5,
+            "content": "Parsing resume and found no errors...",
+            "input": null,
+            "output": null,
+            "tool_calls": [],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-5",
+            "type": "tool",
+            "name": "parse_resume_details_with_validation",
+            "created_at": "2025-08-10T09:02:16Z",
+            "duration": 0.6,
+            "content": "{ \"parsed_details\": { \"name\": \"John Doe\" } }",
+            "input": { "raw_text": "raw_text content here...", "required_skill": null },
+            "output": { "parsed_details": { "name": "John Doe" } },
+            "tool_calls": [
+              {
+                "name": "parse_resume_details_with_validation",
+                "args": { "raw_text": "raw_text content here...", "required_skill": null },
+                "id": "call_parse_resume",
+                "type": "tool_call"
+              }
+            ],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-6",
+            "type": "thinking",
+            "name": null,
+            "created_at": "2025-08-10T09:02:18Z",
+            "duration": 0.8,
+            "content": "Decision: continue_to_summary",
+            "input": null,
+            "output": null,
+            "tool_calls": [],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          },
+          {
+            "id": "step-7",
+            "type": "tool",
+            "name": "create_concise_summary",
+            "created_at": "2025-08-10T09:02:20Z",
+            "duration": 0.7,
+            "content": "Concise summary: Android developer with 5 years experience.",
+            "input": { "raw_text": "raw_text content here...", "parsed_details": { "name": "John Doe" } },
+            "output": "Concise summary: Android developer with 5 years experience.",
+            "tool_calls": [
+              {
+                "name": "create_concise_summary",
+                "args": { "raw_text": "raw_text content here...", "parsed_details": { "name": "John Doe" } },
+                "id": "call_create_summary",
+                "type": "tool_call"
+              }
+            ],
+            "metrics": {},
+            "raw": { "step": {} },
+            "tags": { "replay": 0 }
+          }
+        ]
+      }
+    ]
+  },
+  "run-2": {
+    "id": "run-2",
+    "created_at": "2025-08-10T09:05:00Z",
+    "tasks": [
+      {
+        "id": "run-2-task-0",
+        "name": "Example single task",
+        "created_at": "2025-08-10T09:05:05Z",
+        "metadata": {},
+        "steps": []
+      }
+    ]
+  },
+  "run-3": {
+    "id": "run-3",
+    "created_at": "2025-08-10T09:06:00Z",
+    "tasks": [
+      {
+        "id": "run-3-task-0",
+        "name": "Example single task",
+        "created_at": "2025-08-10T09:06:05Z",
+        "metadata": {},
+        "steps": []
+      }
+    ]
+  }
+}

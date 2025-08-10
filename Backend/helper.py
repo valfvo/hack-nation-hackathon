@@ -23,11 +23,12 @@ CANDIDATE_LABELS = [
 def now_ms():
     return int(time.time() * 1000)
 
-def make_step(run_index: str, task_index: str, step_type: str, step_index: int,
+def make_step(run_index: str, task_index: str, step_type: str, step_index: int, step_id: str,
               data: Dict[str, Any], metrics: Dict[str, Any] = None) -> Dict[str, Any]:
     """Create a step object for flat steps model."""
     return {
         "id": f"run-{run_index}-t{task_index}-{step_type}-{step_index}",
+        "step_id": step_id,
         "type": step_type,
         "timestamp": now_ms(),
         "data": data or {},
