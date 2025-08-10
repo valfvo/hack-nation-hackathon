@@ -1,0 +1,10 @@
+fastapi==0.116.1
+langchain==0.3.27
+langchain_core==0.3.74
+langchain_openai==0.3.29
+langgraph==0.6.4
+pydantic==2.11.7
+pypdf==5.9.0
+python-dotenv==1.1.1
+Requests==2.32.4
+uvicorn==0.35.0
