@@ -8,6 +8,8 @@ from typing import List, Optional
 from pydantic.v1 import BaseModel, Field
 
 from langgraph.graph import StateGraph, END, START
+from wrapper import LoggingAgentWrapper
+from langgraph.checkpoint.memory import InMemorySaver
 
 load_dotenv()
 
@@ -236,8 +238,8 @@ def build_graph_with_failure_task():
     workflow.add_edge("create_summary", END)
     # The rejection path also leads to the end
     workflow.add_edge("send_rejection_email", END)
-
-    return workflow.compile()
+    checkpointer = InMemorySaver()
+    return workflow.compile(checkpointer=checkpointer)
 
 
 # ==============================================================================
@@ -249,11 +251,13 @@ def main():
     pdf_file = "android-developer-1559034496.pdf"
     pdf_path = os.path.join("resume/", pdf_file)
     app = build_graph_with_failure_task()
+    app = LoggingAgentWrapper(app)
 
     # --- STEP 1: Initial run that is designed to FAIL ---
     print("--- 🚀 Initial Run: Testing validation failure ---")
     initial_state_to_fail = {"pdf_path": pdf_path, "required_skill": "Machine Learning"}
     log_event("TASK_START", {"cv": pdf_file, "params": initial_state_to_fail})
+    config = {"configurable": {"thread_id": "1"}}
     failed_state = app.invoke(initial_state_to_fail)
 
     # Check the outcome of the failure

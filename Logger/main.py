@@ -16,24 +16,29 @@ agent = create_react_agent(
     checkpointer=checkpointer,
 )
 
+# agent.invoke(
+#     {"messages": [{"role": "user", "content": "what is the weather in sf"}]},
+#     config={"configurable": {"thread_id": "1"}}
+
 
 config = {"configurable": {"thread_id": "1"}}
 
-# Run the agent
+# # Run the agent
 stream = agent.stream(
     {"messages": [{"role": "user", "content": "what is the weather in sf"}]},
     config)
 for a in stream:
     print(a.keys())
-    state = list(agent.get_state_history(config))[0]
-    print(state.config["configurable"]["checkpoint_id"])
+    print(a)
+    # state = list(agent.get_state_history(config))[0]
+    # print(state.config["configurable"]["checkpoint_id"])
 
 
-states = list(agent.get_state_history(config))
-for state in states:
-    print(state.next)
-    print(state.config["configurable"]["checkpoint_id"])
-    print(state.values)
+# states = list(agent.get_state_history(config))
+# for state in states:
+#     print(state)
+#     # print(state.config["configurable"]["checkpoint_id"])
+#     # print(state.values)
 
 
 
