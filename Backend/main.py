@@ -19,7 +19,7 @@ from helper import score_text, DEFAULT_THRESHOLD  # we no longer import make_ste
 # In-memory DB + lock
 # --------------------------------------------------------------------------
 def _load_runs() -> Dict[str, Any]:
-    with open("new_runs.json", "r", encoding="utf-8") as f:
+    with open("runs.json", "r", encoding="utf-8") as f:
         data = json.load(f)
     # Accept either dict keyed by run-id OR list of runs with "id"
     if isinstance(data, list):
