@@ -14,9 +14,7 @@ from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage
 from langchain_core.tools import tool
 
 from langgraph.checkpoint.memory import InMemorySaver
-from wrapper import (
-    LoggingAgentWrapper,
-)
+from wrapper import LoggingAgentWrapper
 
 load_dotenv()
 
@@ -28,7 +26,7 @@ os.environ["OPENAI_API_KEY"] = api_key
 
 @tool
 def extract_text_from_pdf(pdf_path: str) -> str:
-    """Extracts all text from a specified PDF file."""
+    """Extracts all text from a specified PDF file. This should be the first step."""
     print(f"--- TOOL: extract_text_from_pdf, INPUT: {pdf_path} ---")
     try:
         reader = PdfReader(pdf_path)
@@ -47,17 +45,17 @@ class ParsedDetails(BaseModel):
 
 
 @tool
-def parse_resume_details(resume_text: str) -> ParsedDetails:
-    """Parses raw text from a resume to extract structured details like name, email, and skills."""
-    print(f"--- TOOL: parse_resume_details ---")
-    prompt = f"Analyze the following resume text and extract the key information.\n\nText:\n{resume_text}"
+def prepare_parsing_prompt(resume_text: str) -> str:
+    """Prepares the prompt to extract structured details (name, email, skills) from raw resume text."""
+    print(f"--- TOOL: prepare_parsing_prompt ---")
+    prompt = f"Analyze the following resume text and extract the key information. Respond with a JSON object that conforms to the 'ParsedDetails' schema.\n\nText:\n{resume_text}"
     return prompt
 
 
 @tool
-def create_summary(resume_text: str) -> str:
-    """Creates a concise 2-3 sentence summary of a candidate's profile."""
-    print(f"--- TOOL: create_summary ---")
+def prepare_summary_prompt(resume_text: str) -> str:
+    """Prepares the prompt to create a concise 2-3 sentence summary of a candidate's profile."""
+    print(f"--- TOOL: prepare_summary_prompt ---")
     prompt = f"Based on the following full resume text, write a concise and impactful 2-3 sentence summary for a recruiter.\n\nText:\n{resume_text}\n\nSummary:"
     return prompt
 
@@ -86,14 +84,26 @@ class AgentState(TypedDict):
 
 
 def agent_node(state: AgentState, llm):
-    """Le "cerveau" de l'agent qui décide de l'action à prendre."""
     print("--- AGENT: Thinking... ---")
+    last_message = state["messages"][-1]
+    if isinstance(last_message, ToolMessage) and "prompt" in last_message.content:
+        print("--- AGENT: Self-prompting with the generated prompt. ---")
+        prompt_to_send = last_message.content
+        if "ParsedDetails" in prompt_to_send:
+            structured_llm = ChatOpenAI(
+                temperature=0, model_name="gpt-4o-mini"
+            ).with_structured_output(ParsedDetails)
+            result = structured_llm.invoke(prompt_to_send)
+            return {"messages": [HumanMessage(content=json.dumps(result.dict()))]}
+        else:
+            result = llm.invoke(prompt_to_send)
+            return {"messages": [result]}
+
     result = llm.invoke(state["messages"])
     return {"messages": [result]}
 
 
 def should_continue(state: AgentState):
-    """Décide si l'on continue la boucle d'action ou si le travail est terminé."""
     if not state["messages"][-1].tool_calls:
         print("--- AGENT: Work finished. ---")
         return "end"
@@ -105,8 +115,8 @@ def should_continue(state: AgentState):
 def build_react_agent_graph():
     tools = [
         extract_text_from_pdf,
-        parse_resume_details,
-        create_summary,
+        prepare_parsing_prompt,
+        prepare_summary_prompt,
         send_rejection_email,
     ]
     llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini").bind_tools(tools)
@@ -129,7 +139,6 @@ def build_react_agent_graph():
 
 def main():
     app = build_react_agent_graph()
-
     app = LoggingAgentWrapper(app)
 
     print("\n\n--- 🚀 SCENARIO 1: Candidate does NOT match ---")
