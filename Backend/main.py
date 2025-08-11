@@ -418,3 +418,8 @@ def get_run(run_id: str):
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
     return run
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for Docker."""
+    return {"status": "healthy"}

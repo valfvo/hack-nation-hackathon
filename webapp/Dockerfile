@@ -4,19 +4,19 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for better caching
 COPY package*.json ./
 
-# Install ALL dependencies (including dev dependencies needed for build)
+# Install dependencies 
 RUN npm ci
 
-# Copy the rest of the application
+# Copy source code
 COPY . .
 
-# Build the Next.js application
+# Build the application
 RUN npm run build
 
-# Expose the port Next.js runs on
+# Expose port
 EXPOSE 3000
 
 # Start the application

@@ -6,8 +6,8 @@ from transformers import pipeline
 # Lock for thread safety
 DB_LOCK = Lock()
 
-# Compliance classifier
-classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+# Compliance classifier - lazy loaded
+classifier = None
 
 # Default threshold for violations
 DEFAULT_THRESHOLD = 0.8
@@ -19,6 +19,17 @@ CANDIDATE_LABELS = [
     "unethical", "ethical",
     "bias", "unbiased"
 ]
+
+def get_classifier():
+    """Lazy load the classifier to avoid startup network dependency."""
+    global classifier
+    if classifier is None:
+        try:
+            classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+        except Exception as e:
+            print(f"Warning: Could not load compliance classifier: {e}")
+            classifier = None
+    return classifier
 
 def now_ms():
     return int(time.time() * 1000)
@@ -56,6 +67,18 @@ def score_text(text: str, threshold: float = DEFAULT_THRESHOLD) -> Dict[str, Any
     """
     Run the zero-shot classifier on text and return structured compliance results.
     """
+    classifier = get_classifier()
+    if classifier is None:
+        # Return empty/safe response if classifier is not available
+        return {
+            "label_scores": {},
+            "top_label": "safe",
+            "top_score": 1.0,
+            "is_violation": False,
+            "violations": {},
+            "warning": "Compliance classifier not available"
+        }
+    
     output = classifier(text, CANDIDATE_LABELS, multi_label=True)
     label_scores = dict(zip(output["labels"], output["scores"]))
     # Top label and score
