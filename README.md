@@ -75,18 +75,25 @@ The system consists of three main components:
 1. **Clone the repository**
    ```bash
    git clone https://github.com/valfvo/hackathon-yubu-code
-   cd hack-nation-hackathon
+   cd hackathon-yubu-code
    ```
 
-2. **Start all services**
+2. **Set up environment variables (optional)**
    ```bash
-   docker-compose up --build
+   cp .env.example .env
+   # Edit .env to add your OPENAI_API_KEY if you want to use the Logger service
    ```
 
-3. **Access the services**
+3. **Start all services**
+   ```bash
+   docker compose up --build
+   ```
+
+4. **Access the services**
    - Backend API: http://localhost:8000
-   - Web Dashboard: http://localhost:3000 (when frontend is implemented)
-   - Logger Service: http://localhost:8001
+   - Backend Health Check: http://localhost:8000/health
+   - Web Dashboard: http://localhost:3000
+   - Logger Service: http://localhost:8001 (requires OPENAI_API_KEY)
 
 ### Local Development Setup
 
