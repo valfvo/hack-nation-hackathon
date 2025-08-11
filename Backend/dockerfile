@@ -1,11 +1,14 @@
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PIP_TRUSTED_HOST=pypi.org,pypi.python.org,files.pythonhosted.org,download.pytorch.org
 
 WORKDIR /backend
 
-RUN pip install --no-cache-dir fastapi uvicorn pydantic[dotenv] transformers torch --extra-index-url https://download.pytorch.org/whl/cpu
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --trusted-host download.pytorch.org -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
 COPY . /backend/
 

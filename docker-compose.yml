@@ -1,10 +1,8 @@
-version: "3.9"
-
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: ./Backend
+      dockerfile: dockerfile
     ports:
       - "8000:8000"
     environment:
@@ -15,17 +13,24 @@ services:
       timeout: 3s
       retries: 10
 
-  # optional placeholders to keep the 3-env shape; swap with your real images later
-  agent:
-    image: alpine:3.19
-    command: ["sh", "-c", "echo 'agent placeholder'; sleep 3600"]
+  logger:
+    build:
+      context: ./Logger
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       backend:
         condition: service_healthy
 
-  frontend:
-    image: alpine:3.19
-    command: ["sh", "-c", "echo 'frontend placeholder'; sleep 3600"]
+  webapp:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
+      - logger
